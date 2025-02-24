@@ -1,0 +1,261 @@
+"use client"
+
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { InspectionGroup, InspectionStatus } from "./types"
+import { ReportCard } from "./report-card"
+import { EditReportForm } from "./edit-report-form"
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
+import { z } from "zod"
+import { createReportSchema } from "./types"
+import { useState, useEffect, useRef } from "react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+
+type FormValues = z.infer<ReturnType<typeof createReportSchema>>
+
+interface InspectionGroupCardProps {
+  group: InspectionGroup
+  isExpanded: boolean
+  editingReportId: string | null
+  onToggle: () => void
+  onEditReport: (reportId: string) => void
+  onSaveEdit: (reportId: string, data: FormValues) => void
+  onCancelEdit: () => void
+  onAddReport: () => void
+  onDeleteReport: (reportId: string) => void
+  onDeleteInspection: (inspectionId: string) => void
+  onToggleStatus: (inspectionId: string) => void
+  showAddForm: boolean
+  dateRange?: { from: Date; to: Date }
+  selectedInspector?: string
+}
+
+const getStatusDisplay = (status: InspectionStatus): string => {
+  return status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'
+}
+
+export const InspectionGroupCard = ({
+  group,
+  isExpanded,
+  editingReportId,
+  onToggle,
+  onEditReport,
+  onSaveEdit,
+  onCancelEdit,
+  onAddReport,
+  onDeleteReport,
+  onDeleteInspection,
+  showAddForm,
+  dateRange,
+  selectedInspector,
+}: InspectionGroupCardProps) => {
+  const [showReportDeleteDialog, setShowReportDeleteDialog] = useState(false)
+  const [showInspectionDeleteDialog, setShowInspectionDeleteDialog] = useState(false)
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null)
+  const [isHeaderSticky, setIsHeaderSticky] = useState(false)
+  const headerRef = useRef<HTMLDivElement>(null)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = today.toISOString().split('T')[0]
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeaderSticky(!entry.isIntersecting)
+      },
+      {
+        threshold: 1,
+      }
+    )
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  const handleReportDelete = (reportId: string) => {
+    setReportToDelete(reportId)
+    setShowReportDeleteDialog(true)
+  }
+
+  const confirmReportDelete = () => {
+    if (reportToDelete) {
+      onDeleteReport(reportToDelete)
+    }
+    setShowReportDeleteDialog(false)
+    setReportToDelete(null)
+  }
+
+  const confirmInspectionDelete = () => {
+    onDeleteInspection(group.id)
+    setShowInspectionDeleteDialog(false)
+  }
+
+  const isInDateRange = (date: string) => {
+    if (!dateRange?.from || !dateRange?.to) return false
+    const reportDate = new Date(date)
+    const endDate = new Date(dateRange.to)
+    endDate.setHours(23, 59, 59, 999)
+    return reportDate >= dateRange.from && reportDate <= endDate
+  }
+
+  const lastReport = group.reports[group.reports.length - 1]
+  const completionDate = group.status === 'COMPLETED' ? lastReport?.date : null
+  const isInProgress = group.status === 'IN_PROGRESS'
+
+  return (
+    <Card className={cn(
+      "shadow-sm hover:shadow transition-shadow relative",
+      isExpanded && "overflow-visible",
+      !isExpanded && "rounded-lg"
+    )}>
+      <div
+        ref={headerRef}
+        className={cn(
+          "sticky-header cursor-pointer",
+          isHeaderSticky && "scrolled",
+          !isExpanded && "rounded-lg",
+          isExpanded && "rounded-t-lg"
+        )}
+        onClick={onToggle}
+      >
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <span>{group.equipmentTag}</span>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </CardTitle>
+            <div className="text-xs text-muted-foreground space-x-2">
+              <span>Started: {format(new Date(group.startDate), "MMM d, yyyy")}</span>
+              {completionDate && (
+                <>
+                  <span>•</span>
+                  <span>Completed: {format(new Date(completionDate), "MMM d, yyyy")}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2 items-center">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              isInProgress ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+            }`}>
+              {getStatusDisplay(group.status)}
+            </span>
+            {isInProgress && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowInspectionDeleteDialog(true)
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      {isExpanded && (
+        <CardContent className="px-6 py-3">
+          <div className="space-y-3">
+            {[...group.reports]
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+              .map((report) => (
+                <div key={report.id}>
+                  {editingReportId === report.id ? (
+                    <EditReportForm
+                      initialData={{
+                        date: report.date,
+                        inspectors: report.inspectors,
+                        description: report.description
+                      }}
+                      inspectionStartDate={group.startDate}
+                      onSave={(data) => onSaveEdit(report.id, data)}
+                      onCancel={onCancelEdit}
+                    />
+                  ) : (
+                    <div className="flex items-start gap-2 w-full">
+                      <ReportCard
+                        report={report}
+                        onEdit={() => onEditReport(report.id)}
+                        isInDateRange={isInDateRange(report.date)}
+                        inspectionStatus={group.status}
+                        selectedInspector={selectedInspector}
+                      />
+                      {isInProgress && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleReportDelete(report.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+
+          {isInProgress && (
+            <div className="mt-3">
+              {showAddForm ? (
+                <EditReportForm
+                  initialData={{
+                    date: todayStr,
+                    inspectors: [],
+                    description: ""
+                  }}
+                  inspectionStartDate={group.startDate}
+                  onSave={(data) => onSaveEdit("new", data)}
+                  onCancel={onCancelEdit}
+                />
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={onAddReport}
+                >
+                  + Add Daily Report
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      )}
+
+      {/* Delete Report Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showReportDeleteDialog}
+        onClose={() => {
+          setShowReportDeleteDialog(false)
+          setReportToDelete(null)
+        }}
+        onConfirm={confirmReportDelete}
+        title="Delete Daily Report"
+        description="Are you sure you want to delete this daily report? This action cannot be undone."
+      />
+
+      {/* Delete Inspection Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showInspectionDeleteDialog}
+        onClose={() => setShowInspectionDeleteDialog(false)}
+        onConfirm={confirmInspectionDelete}
+        title="Delete Inspection"
+        description="Are you sure you want to delete this inspection? All daily reports associated with this inspection will be permanently deleted. This action cannot be undone."
+      />
+    </Card>
+  )
+}

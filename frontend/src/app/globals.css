@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+ 
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --ring: 215 20.2% 65.1%;
+ 
+    --radius: 0.5rem;
+
+    /* Custom variables */
+    --card-height: 84px;
+    --header-height: 64px;
+    --list-padding: 1.5rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+ 
+    --ring: 217.2 32.6% 17.5%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar styles */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Sticky header styles */
+.sticky-header {
+  @apply sticky top-0 z-40 bg-muted px-6 py-3;
+  @apply rounded-t-lg border-b border-border/40;
+  @apply transition-all duration-200;
+  backdrop-filter: blur(8px);
+}
+
+.sticky-header.scrolled {
+  @apply shadow-sm;
+  @apply border-b border-border/60;
+}
+
+/* Inspection list container */
+.inspection-list {
+  @apply relative bg-background;
+  height: calc(var(--card-height) * min(10, var(--item-count, 1)));
+  min-height: var(--card-height);
+}
+
+.inspection-list-content {
+  @apply absolute inset-0 space-y-3;
+  max-height: calc(var(--card-height) * 10);
+}
+
+.inspection-list-content.scrollable {
+  @apply overflow-y-auto pr-2;
+}
+
+.inspection-list-content:not(.scrollable) {
+  @apply overflow-y-visible;
+}
+
+/* Inspection card styles */
+.inspection-card {
+  min-height: var(--card-height);
+  transition: min-height 0.2s ease-in-out;
+}
+
+.inspection-card.expanded {
+  min-height: calc(var(--card-height) * 2);
+}
+
+/* Report highlight animation */
+.bg-green-200 {
+  transition: background-color 0.2s ease-in-out;
+}
