@@ -1,79 +1,100 @@
-# Daily Reports Page Frontend Improvements Plan
+# Daily Reports Page Redesign Plan
 
-## 1. Tag Selection Component Redesign
-- Replace current scroll mechanism with shadcn/ui's built-in scrolling
-- Implement proper keyboard navigation
-- Use `Combobox` component from shadcn/ui instead of current custom implementation
-- Add better visual feedback for selected items
-- Ensure proper handling of large lists without custom scroll logic
+## Current Issues
+1. Layout and organization is not optimal
+2. Filters overflow horizontally on smaller screens
+3. Inspection addition form needs better organization
+4. Components are not fully responsive
 
-### Implementation Details
-- Use `ScrollArea` component for list scrolling
-- Integrate `Check` icon for selected items
-- Add proper ARIA labels for accessibility
-- Remove custom scroll handlers and gradient overlays
+## Proposed Improvements
 
-## 2. Inspector Filter Improvements
-- Replace current combobox with shadcn/ui's multi-select combobox
-- Remove custom scroll logic
-- Add clearer visual indicators for selected inspectors
-- Implement proper keyboard navigation
+### 1. Filters Component (`filters.tsx`)
+- Implement responsive grid layout using Tailwind's grid system
+- Convert from flex-nowrap to grid with auto-fit columns
+- Ensure filters wrap properly on smaller screens
+- Add proper spacing between filter groups
+- Maintain visual hierarchy with consistent labeling
 
-### Implementation Details
-- Use `Command` component with multi-select capability
-- Add checkboxes for better visual feedback
-- Implement proper scrolling with `ScrollArea`
-- Add "Clear All" functionality
+```tsx
+// Example structure
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  {/* Filter components */}
+</div>
+```
 
-## 3. Status Filter Enhancement
-- Implement proper 3-state combobox filter
-- Status options: All, In Progress, Completed
-- Add proper icons for each status
-- Include clear selection capability
+### 2. New Inspection Form (`new-inspection-form.tsx`)
+- Improve form layout with proper spacing
+- Make form elements full width on mobile
+- Add clear section separation
+- Ensure consistent heights for form controls
 
-### Implementation Details
-- Use `Select` component from shadcn/ui
-- Add status icons from Lucide
-- Implement proper state management
-- Add visual indicators for active filters
+```tsx
+// Example structure
+<Card className="w-full">
+  <CardContent className="p-6">
+    <form className="grid gap-6 sm:grid-cols-[2fr_1fr_auto]">
+      {/* Form fields */}
+    </form>
+  </CardContent>
+</Card>
+```
 
-## 4. Edit Report Form Optimization
-- Reorganize layout to be more compact
-- Improve inspector selection component
-- Fix multi-select functionality
-- Add better form validation feedback
+### 3. Edit Report Form (`edit-report-form.tsx`)
+- Improve responsive layout for form fields
+- Better organize date and inspector selection
+- Make description field properly responsive
+- Add proper spacing between sections
 
-### Implementation Details
-- Use grid layout for better space utilization
-- Implement proper form validation with react-hook-form
-- Add error boundaries
-- Improve visual hierarchy
+### 4. General Improvements
+- Consistent spacing using Tailwind's spacing scale
+- Proper responsive breakpoints for all components
+- Consistent form field heights and alignments
+- Better mobile experience with stacked layouts
+- Clear visual hierarchy
 
-## Technical Considerations
-1. Component Dependencies
-   - shadcn/ui components
-   - react-hook-form for form handling
-   - Lucide icons
+## Implementation Steps
 
-2. State Management
-   - Use controlled components
-   - Implement proper error handling
-   - Add loading states
+1. Update Filters Component
+   - Modify layout structure
+   - Add responsive classes
+   - Improve filter group organization
 
-3. Accessibility
-   - Ensure keyboard navigation
-   - Add proper ARIA labels
-   - Maintain focus management
+2. Enhance New Inspection Form
+   - Restructure form layout
+   - Improve spacing and alignment
+   - Add responsive behavior
 
-4. Performance
-   - Implement proper list virtualization for large datasets
-   - Add proper loading states
-   - Optimize re-renders
+3. Improve Edit Report Form
+   - Update form layout
+   - Enhance mobile experience
+   - Fix spacing issues
 
-## Implementation Order
-1. Tag selection component (highest priority)
-2. Status filter (quick win)
-3. Inspector filter
-4. Edit report form optimization
+4. Test Responsiveness
+   - Verify layouts at all breakpoints
+   - Ensure proper wrapping
+   - Check mobile usability
 
-Each component will be implemented and tested individually to ensure proper functionality before integration.
+## Technical Details
+
+### Breakpoints
+- sm: 640px
+- md: 768px
+- lg: 1024px
+- xl: 1280px
+
+### Spacing Scale
+- Use consistent spacing:
+  - gap-4 (1rem) for general spacing
+  - gap-6 (1.5rem) for section spacing
+  - p-6 (1.5rem) for card padding
+
+### Components to Modify
+1. filters.tsx
+2. new-inspection-form.tsx
+3. edit-report-form.tsx
+
+## Expected Outcome
+- Clean, organized layout
+- Proper responsive behavior
+- Consistent spacing and alignment
+- Better user experience on all devices

@@ -59,10 +59,10 @@ export const EditReportForm: FC<EditReportFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col space-y-4">
-     <div className="flex flex-nowrap gap-4 items-start">
-       <div className="flex-1 space-y-2">
-         <label className="text-sm font-medium">Date</label>
+    <form onSubmit={handleSubmit(onFormSubmit)} className="flex flex-col space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="w-full space-y-2">
+         <label className="text-sm font-medium mb-1.5 block">Date</label>
          <Popover>
            <PopoverTrigger asChild>
              <Button
@@ -88,8 +88,8 @@ export const EditReportForm: FC<EditReportFormProps> = ({
          </Popover>
        </div>
 
-       <div className="flex-1 space-y-2">
-         <label className="text-sm font-medium">Inspectors</label>
+       <div className="w-full space-y-2">
+         <label className="text-sm font-medium mb-1.5 block">Inspectors</label>
          <Popover>
            <PopoverTrigger asChild>
              <Button
@@ -143,25 +143,31 @@ export const EditReportForm: FC<EditReportFormProps> = ({
      </div>
 
      <div className="space-y-2">
-        <label className="text-sm font-medium">Description</label>
-        <Textarea
-          {...register("description")}
-          placeholder="Enter report description..."
-          className="min-h-[100px] resize-none"
-        />
-      </div>
+       <label className="text-sm font-medium mb-1.5 block">Description</label>
+       <Textarea
+         {...register("description")}
+         placeholder="Enter report description..."
+         className="min-h-[120px] resize-none w-full"
+       />
+     </div>
 
-      <div className="col-span-2 flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button 
-          type="submit" 
-          disabled={!date || selectedInspectors.length === 0}
-        >
-          Save
-        </Button>
-      </div>
+     <div className="flex justify-end gap-3 pt-2">
+       <Button
+         type="button"
+         variant="outline"
+         onClick={onCancel}
+         className="w-full sm:w-auto"
+       >
+         Cancel
+       </Button>
+       <Button
+         type="submit"
+         disabled={!date || selectedInspectors.length === 0}
+         className="w-full sm:w-auto"
+       >
+         Save
+       </Button>
+     </div>
     </form>
   )
 }

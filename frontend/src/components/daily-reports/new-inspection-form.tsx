@@ -71,20 +71,20 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
   }
 
   return (
-    <Card className="mb-4">
-      <CardContent className="pt-4">
+    <Card className="mb-6">
+      <CardContent className="p-6">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="flex flex-wrap gap-3 items-start"
+            className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_auto] gap-4 items-end"
           >
             <FormField
               control={form.control}
               name="equipmentTag"
               render={({ field }) => (
-                <FormItem className="flex-[2] min-h-[85px]">
-                  <FormLabel className="text-sm">Equipment Tag</FormLabel>
-                  <FormControl className="mb-1">
+                <FormItem className="w-full">
+                  <FormLabel className="text-sm font-medium mb-1.5 block">Equipment Tag</FormLabel>
+                  <FormControl>
                     <Combobox
                       value={field.value}
                       onValueChange={field.onChange}
@@ -105,9 +105,9 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
               control={form.control}
               name="startDate"
               render={({ field }) => (
-                <FormItem className="flex-1 min-h-[85px]">
-                  <FormLabel className="text-sm">Start Date</FormLabel>
-                  <FormControl className="mb-1">
+                <FormItem className="w-full">
+                  <FormLabel className="text-sm font-medium mb-1.5 block">Start Date</FormLabel>
+                  <FormControl>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -154,7 +154,7 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-10"
+              className="h-10 w-full sm:w-auto whitespace-nowrap"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
