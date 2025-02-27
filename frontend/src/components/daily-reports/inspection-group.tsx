@@ -1,19 +1,27 @@
 "use client"
 
-import { Card, CardContent, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Trash2, ClipboardCheck, Timer } from "lucide-react"
 import { InspectionGroup, InspectionStatus } from "./types"
 import { ReportCard } from "./report-card"
 import { EditReportForm } from "./edit-report-form"
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog"
-import { z } from "zod"
-import { createReportSchema } from "./types"
 import { useState, useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
-type FormValues = z.infer<ReturnType<typeof createReportSchema>>
+interface ReportFormValues {
+  date: string
+  description: string
+  inspectors: string[]
+}
+
+interface ReportFormValues {
+  date: string
+  description: string
+  inspectors: string[]
+}
 
 interface InspectionGroupCardProps {
   group: InspectionGroup
@@ -21,12 +29,11 @@ interface InspectionGroupCardProps {
   editingReportId: string | null
   onToggle: () => void
   onEditReport: (reportId: string) => void
-  onSaveEdit: (reportId: string, data: FormValues) => void
+  onSaveEdit: (reportId: string, data: ReportFormValues) => void
   onCancelEdit: () => void
   onAddReport: () => void
   onDeleteReport: (reportId: string) => void
   onDeleteInspection: (inspectionId: string) => void
-  onToggleStatus: (inspectionId: string) => void
   showAddForm: boolean
   dateRange?: { from: Date; to: Date }
   selectedInspector?: string
@@ -34,6 +41,22 @@ interface InspectionGroupCardProps {
 
 const getStatusDisplay = (status: InspectionStatus): string => {
   return status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'
+}
+
+const getStatusStyles = (status: InspectionStatus) => {
+  const styles = {
+    background: status === 'IN_PROGRESS' 
+      ? 'bg-gradient-to-br from-blue-500/2 via-blue-500/5 to-blue-500/10'
+      : 'bg-gradient-to-br from-green-500/2 via-green-500/5 to-green-500/10',
+    badge: status === 'IN_PROGRESS'
+      ? 'bg-blue-100 text-blue-800'
+      : 'bg-green-100 text-green-800',
+    icon: status === 'IN_PROGRESS' ? Timer : ClipboardCheck,
+    shadow: status === 'IN_PROGRESS' 
+      ? 'shadow-blue-500/10'
+      : 'shadow-green-500/10'
+  }
+  return styles
 }
 
 export const InspectionGroupCard = ({
@@ -56,10 +79,10 @@ export const InspectionGroupCard = ({
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
   const [isHeaderSticky, setIsHeaderSticky] = useState(false)
   const headerRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split('T')[0]
+  const statusStyles = getStatusStyles(group.status)
+  const StatusIcon = statusStyles.icon
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -67,11 +90,12 @@ export const InspectionGroupCard = ({
         setIsHeaderSticky(!entry.isIntersecting)
       },
       {
-        threshold: 1,
+        threshold: [1],
+        rootMargin: "-1px 0px 0px 0px"
       }
     )
 
-    if (headerRef.current) {
+    if (headerRef.current && cardRef.current) {
       observer.observe(headerRef.current)
     }
 
@@ -109,61 +133,88 @@ export const InspectionGroupCard = ({
   const isInProgress = group.status === 'IN_PROGRESS'
 
   return (
-    <Card className={cn(
-      "shadow-sm hover:shadow transition-shadow relative",
-      isExpanded && "overflow-visible",
-      !isExpanded && "rounded-lg"
-    )}>
+    <Card 
+      ref={cardRef}
+      className={cn(
+        "backdrop-blur-sm transition-all duration-300",
+        "hover:-translate-y-0.5 relative overflow-visible",
+        statusStyles.background,
+        statusStyles.shadow,
+        isExpanded && "shadow-lg",
+        !isExpanded && "hover:shadow-md shadow-sm"
+      )}
+    >
       <div
         ref={headerRef}
         className={cn(
-          "sticky-header cursor-pointer",
-          isHeaderSticky && "scrolled",
+          "sticky top-0 z-20 transition-colors duration-200",
+          "cursor-pointer bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+          isHeaderSticky && "shadow-sm border-b border-border/50",
           !isExpanded && "rounded-lg",
           isExpanded && "rounded-t-lg"
         )}
+        style={{ top: isHeaderSticky ? 0 : 'auto' }}
         onClick={onToggle}
       >
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <span>{group.equipmentTag}</span>
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </CardTitle>
-            <div className="text-xs text-muted-foreground space-x-2">
-              <span>Started: {format(new Date(group.startDate), "MMM d, yyyy")}</span>
-              {completionDate && (
-                <>
-                  <span>•</span>
-                  <span>Completed: {format(new Date(completionDate), "MMM d, yyyy")}</span>
-                </>
+        <div className="p-4">
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg",
+                group.status === 'IN_PROGRESS' ? "bg-blue-100" : "bg-green-100"
+              )}>
+                <StatusIcon className={cn(
+                  "h-4 w-4",
+                  group.status === 'IN_PROGRESS' ? "text-blue-600" : "text-green-600"
+                )} />
+              </div>
+              <div>
+                <div className="font-medium flex items-center gap-2">
+                  <span>{group.equipmentTag}</span>
+                  {isExpanded ? 
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" /> : 
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  }
+                </div>
+                <div className="text-xs text-muted-foreground space-x-2">
+                  <span>Started: {format(new Date(group.startDate), "MMM d, yyyy")}</span>
+                  {completionDate && (
+                    <>
+                      <span>•</span>
+                      <span>Completed: {format(new Date(completionDate), "MMM d, yyyy")}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 items-center">
+              <span className={cn(
+                "px-2 py-1 rounded-full text-xs font-medium",
+                statusStyles.badge
+              )}>
+                {getStatusDisplay(group.status)}
+              </span>
+              {isInProgress && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowInspectionDeleteDialog(true)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               )}
             </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              isInProgress ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-            }`}>
-              {getStatusDisplay(group.status)}
-            </span>
-            {isInProgress && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowInspectionDeleteDialog(true)
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
         </div>
       </div>
+      
       {isExpanded && (
-        <CardContent className="px-6 py-3">
+        <CardContent className="px-6 py-4">
           <div className="space-y-3">
             {[...group.reports]
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -171,14 +222,14 @@ export const InspectionGroupCard = ({
                 <div key={report.id}>
                   {editingReportId === report.id ? (
                     <EditReportForm
-                      initialData={{
-                        date: report.date,
-                        inspectors: report.inspectors,
-                        description: report.description
-                      }}
-                      inspectionStartDate={group.startDate}
-                      onSave={(data) => onSaveEdit(report.id, data)}
+                      onSubmit={(data) => onSaveEdit(report.id, data)}
                       onCancel={onCancelEdit}
+                      inspectionStartDate={group.startDate}
+                      initialValues={{
+                        date: format(new Date(report.date), 'yyyy-MM-dd'),
+                        description: report.description,
+                        inspectors: report.inspectors.map(i => i.toString())
+                      }}
                     />
                   ) : (
                     <div className="flex items-start gap-2 w-full">
@@ -209,24 +260,27 @@ export const InspectionGroupCard = ({
           </div>
 
           {isInProgress && (
-            <div className="mt-3">
+            <div className="mt-4">
               {showAddForm ? (
                 <EditReportForm
-                  initialData={{
-                    date: todayStr,
+                  onSubmit={(data) => onSaveEdit("new", data)}
+                  onCancel={onCancelEdit}
+                  inspectionStartDate={group.startDate}
+                  initialValues={{
+                    date: format(new Date(), 'yyyy-MM-dd'),
                     inspectors: [],
                     description: ""
                   }}
-                  inspectionStartDate={group.startDate}
-                  onSave={(data) => onSaveEdit("new", data)}
-                  onCancel={onCancelEdit}
                 />
               ) : (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
-                  onClick={onAddReport}
+                  className="w-full hover:bg-background/50"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onAddReport()
+                  }}
                 >
                   + Add Daily Report
                 </Button>

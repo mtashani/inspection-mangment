@@ -2,73 +2,103 @@
 
 import { FC, useState, useCallback, useEffect, useMemo } from 'react'
 import { DateRange } from "react-day-picker"
-import { NewInspectionFormValues, ReportFormValues, InspectionGroup, InspectionStatus } from "@/components/daily-reports/types"
+import { Card } from "@/components/ui/card"
 import { NewInspectionForm } from "@/components/daily-reports/new-inspection-form"
 import { Filters } from "@/components/daily-reports/filters"
 import { InspectionGroupCard } from "@/components/daily-reports/inspection-group"
 import { getInspections, createInspection, createDailyReport, updateDailyReport, deleteDailyReport, deleteInspection, toggleInspectionStatus } from "@/api/daily-reports"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-
-const getBackendStatus = (status: string): InspectionStatus | undefined => {
-  if (status === 'all') return undefined
-  return status as InspectionStatus
-}
-
-const formatDateForAPI = (date: Date): string => {
-  return format(date, 'yyyy-MM-dd')
-}
-
-const CARD_HEIGHT = 84 // px
-
-const getLatestReportDate = (group: InspectionGroup): Date => {
-  if (group.reports.length === 0) {
-    return new Date(group.startDate)
-  }
-  return new Date(Math.max(...group.reports.map(report => new Date(report.date).getTime())))
-}
+import { ClipboardList, CheckCircle, Clock, Users } from "lucide-react"
+import { NewInspectionFormValues, ReportFormValues, InspectionGroup, InspectionStatus } from "@/components/daily-reports/types"
+import { SummaryCard } from "@/components/daily-reports/summary-card"
 
 const DailyReportsPage: FC = () => {
-  // Data state
   const [inspectionGroups, setInspectionGroups] = useState<InspectionGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // Filters state
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState("_all")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedInspector, setSelectedInspector] = useState("all")
   
-  // UI state
+  const existingInspections = useMemo(() => {
+    return inspectionGroups
+      .filter(group => group.status === 'IN_PROGRESS')
+      .map(group => group.equipmentTag)
+  }, [inspectionGroups])
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [editingReportId, setEditingReportId] = useState<string | null>(null)
   const [addingReportToGroup, setAddingReportToGroup] = useState<string | null>(null)
 
-  // Fetch data
+  const equipmentTags = useMemo(() => {
+    const tags = new Set(inspectionGroups.map(group => group.equipmentTag))
+    return Array.from(tags).sort()
+  }, [inspectionGroups])
+
+  const stats = useMemo(() => {
+    const totalActive = inspectionGroups.filter(g => g.status === 'IN_PROGRESS').length
+    const totalCompleted = inspectionGroups.filter(g => g.status === 'COMPLETED').length
+    const today = new Date()
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(today.getDate() - 30)
+    const reportsThisMonth = inspectionGroups.reduce((sum, group) => {
+      return sum + group.reports.filter(report => {
+        const reportDate = new Date(report.date)
+        return reportDate >= thirtyDaysAgo && reportDate <= today
+      }).length
+    }, 0)
+    const activeInspectors = new Set()
+    inspectionGroups.forEach(group => {
+      group.reports.forEach(report => {
+        const reportDate = new Date(report.date)
+        if (reportDate >= thirtyDaysAgo && reportDate <= today) {
+          report.inspectors.forEach(inspector => activeInspectors.add(inspector))
+        }
+      })
+    })
+    return {
+      activeInspections: totalActive,
+      completedInspections: totalCompleted,
+      reportsThisMonth,
+      activeInspectors: activeInspectors.size
+    }
+  }, [inspectionGroups])
+
+  const filteredGroups = useMemo(() => {
+    return inspectionGroups.filter(group => {
+      // Skip filtering if "_all" is selected
+      if (searchQuery && searchQuery !== "_all" && !group.equipmentTag.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false
+      }
+      if (selectedInspector !== "all" && !group.reports.some(report => 
+        report.inspectors.includes(selectedInspector)
+      )) {
+        return false
+      }
+      return true
+    })
+  }, [inspectionGroups, searchQuery, selectedInspector])
+
   const fetchInspections = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-
       const dateRangeParam = dateRange?.from && dateRange?.to ? {
-        from: formatDateForAPI(dateRange.from),
-        to: formatDateForAPI(dateRange.to)
+        from: format(dateRange.from, 'yyyy-MM-dd'),
+        to: format(dateRange.to, 'yyyy-MM-dd')
       } : undefined
-
       const { data } = await getInspections(
-        getBackendStatus(selectedStatus),
-        1,  // page
-        1000,  // large page size to get all items
+        selectedStatus !== 'all' ? selectedStatus as InspectionStatus : undefined,
+        1,
+        1000,
         dateRangeParam
       )
-
-      // Sort inspections by latest report date
       const sortedData = [...data].sort((a, b) => {
-        const dateA = getLatestReportDate(a)
-        const dateB = getLatestReportDate(b)
+        const dateA = new Date(a.startDate)
+        const dateB = new Date(b.startDate)
         return dateB.getTime() - dateA.getTime()
       })
-
       setInspectionGroups(sortedData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load inspections')
@@ -81,44 +111,13 @@ const DailyReportsPage: FC = () => {
     fetchInspections()
   }, [fetchInspections])
 
-  // Filter inspections based on search and inspector filter
-  const filteredGroups = useMemo(() => {
-    return inspectionGroups.filter(group => {
-      if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase()
-        const matchesEquipment = group.equipmentTag.toLowerCase().includes(searchLower)
-        if (!matchesEquipment) {
-          return false
-        }
-      }
-
-      if (selectedInspector !== "all") {
-        if (!group.reports.some(report => report.inspectors.includes(selectedInspector))) {
-          return false
-        }
-      }
-
-      return true
-    })
-  }, [inspectionGroups, searchQuery, selectedInspector])
-
-  // Update CSS variables when filtered groups change
-  useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--card-height', `${CARD_HEIGHT}px`)
-    root.style.setProperty('--item-count', String(filteredGroups.length))
-  }, [filteredGroups.length])
-
   const handleNewInspection = async (data: NewInspectionFormValues) => {
     try {
       setError(null)
       await createInspection(data)
       await fetchInspections()
     } catch (err) {
-      if (err instanceof Error) {
-        throw err
-      }
-      throw new Error('Failed to create inspection')
+      setError(err instanceof Error ? err.message : 'Failed to create inspection')
     }
   }
 
@@ -126,25 +125,15 @@ const DailyReportsPage: FC = () => {
     try {
       setError(null)
       if (reportId === "new") {
-        await handleAddReport(addingReportToGroup!, data)
+        await createDailyReport(addingReportToGroup!, data)
       } else {
         await updateDailyReport(reportId, data)
-        await fetchInspections()
       }
-      setEditingReportId(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update report')
-    }
-  }
-
-  const handleAddReport = async (groupId: string, data: ReportFormValues) => {
-    try {
-      setError(null)
-      await createDailyReport(groupId, data)
       await fetchInspections()
+      setEditingReportId(null)
       setAddingReportToGroup(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add report')
+      setError(err instanceof Error ? err.message : 'Failed to update report')
     }
   }
 
@@ -174,7 +163,7 @@ const DailyReportsPage: FC = () => {
       await toggleInspectionStatus(inspectionId)
       await fetchInspections()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to toggle inspection status')
+      setError(err instanceof Error ? err.message : 'Failed to toggle status')
     }
   }
 
@@ -191,71 +180,123 @@ const DailyReportsPage: FC = () => {
   }, [])
 
   return (
-    <div className="container mx-auto p-6 flex flex-col min-h-0">
-      <h1 className="text-3xl font-bold mb-6 flex-none">Daily Inspection Reports</h1>
+    <div className="container mx-auto py-10 space-y-8">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Daily Inspection Reports</h1>
+        <p className="text-sm text-muted-foreground">
+          Track and manage equipment inspection reports and progress
+        </p>
+      </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex-none">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      <div className="flex-none mb-6">
-        <NewInspectionForm onSubmit={handleNewInspection} />
-
-        <Filters
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
-          selectedInspector={selectedInspector}
-          onInspectorChange={setSelectedInspector}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard
+          title="Active Inspections"
+          count={stats.activeInspections}
+          className="bg-blue-500"
+          bgGradient="bg-gradient-to-br from-blue-500/2 via-blue-500/5 to-blue-500/10"
+          textColorClass="text-blue-500 dark:text-blue-400"
+          icon={ClipboardList}
+        />
+        <SummaryCard
+          title="Completed Inspections"
+          count={stats.completedInspections}
+          className="bg-green-500"
+          bgGradient="bg-gradient-to-br from-green-500/2 via-green-500/5 to-green-500/10"
+          textColorClass="text-green-500 dark:text-green-400"
+          icon={CheckCircle}
+        />
+        <SummaryCard
+          title="Reports This Month"
+          count={stats.reportsThisMonth}
+          className="bg-primary"
+          bgGradient="bg-gradient-to-br from-primary/2 via-primary/5 to-primary/10"
+          textColorClass="text-primary dark:text-primary"
+          icon={Clock}
+        />
+        <SummaryCard
+          title="Active Inspectors"
+          count={stats.activeInspectors}
+          className="bg-yellow-500"
+          bgGradient="bg-gradient-to-br from-yellow-500/2 via-yellow-500/5 to-yellow-500/10"
+          textColorClass="text-yellow-500 dark:text-yellow-400"
+          icon={Users}
         />
       </div>
 
-      <div className="inspection-list flex-none">
-        <div className={cn(
-          "inspection-list-content",
-          filteredGroups.length > 10 && "scrollable"
-        )}>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            </div>
-          ) : filteredGroups.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No inspection reports found
-            </div>
-          ) : (
-            filteredGroups.map((group) => (
-              <InspectionGroupCard
-                key={group.id}
-                group={group}
-                isExpanded={expandedGroups.has(group.id)}
-                editingReportId={editingReportId}
-                onToggle={() => toggleGroup(group.id)}
-                onEditReport={setEditingReportId}
-                onSaveEdit={handleEditReport}
-                onCancelEdit={() => {
-                  setEditingReportId(null)
-                  setAddingReportToGroup(null)
-                }}
-                onAddReport={() => setAddingReportToGroup(group.id)}
-                onDeleteReport={handleDeleteReport}
-                onDeleteInspection={handleDeleteInspection}
-                onToggleStatus={handleToggleStatus}
-                showAddForm={addingReportToGroup === group.id}
-                dateRange={dateRange?.from && dateRange?.to ? {
-                  from: dateRange.from,
-                  to: dateRange.to
-                } : undefined}
-                selectedInspector={selectedInspector}
+      <Card className="p-6">
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold tracking-tight mb-4">New Inspection</h2>
+              <NewInspectionForm
+                onSubmit={handleNewInspection}
+                equipmentTags={equipmentTags}
+                existingInspections={existingInspections}
               />
-            ))
-          )}
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <Filters
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+              selectedInspector={selectedInspector}
+              onInspectorChange={setSelectedInspector}
+              equipmentTags={equipmentTags}
+            />
+          </div>
         </div>
+      </Card>
+
+      <div className={cn(
+        "inspection-list space-y-4",
+        loading ? "opacity-50" : ""
+      )}>
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          </div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No inspection reports found
+          </div>
+        ) : (
+          filteredGroups.map((group) => (
+            <InspectionGroupCard
+              key={group.id}
+              group={group}
+              isExpanded={expandedGroups.has(group.id)}
+              editingReportId={editingReportId}
+              onToggle={() => toggleGroup(group.id)}
+              onEditReport={setEditingReportId}
+              onSaveEdit={handleEditReport}
+              onCancelEdit={() => {
+                setEditingReportId(null)
+                setAddingReportToGroup(null)
+              }}
+              onAddReport={() => setAddingReportToGroup(group.id)}
+              onDeleteReport={handleDeleteReport}
+              onDeleteInspection={handleDeleteInspection}
+              onToggleStatus={handleToggleStatus}
+              showAddForm={addingReportToGroup === group.id}
+              dateRange={dateRange?.from && dateRange?.to ? {
+                from: dateRange.from,
+                to: dateRange.to
+              } : undefined}
+              selectedInspector={selectedInspector}
+            />
+          ))
+        )}
       </div>
     </div>
   )

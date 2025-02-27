@@ -1,6 +1,6 @@
 "use client"
 
-import { FC, useState, useCallback, useEffect } from "react"
+import { FC, useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -22,7 +22,6 @@ interface NewInspectionFormProps {
 export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [equipmentTags, setEquipmentTags] = useState<string[]>([])
-  const [isLoadingTags, setIsLoadingTags] = useState(false)
 
   const form = useForm<NewInspectionFormValues>({
     resolver: zodResolver(newInspectionSchema),
@@ -32,21 +31,21 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
     }
   })
 
-  const loadTags = useCallback(async (search?: string) => {
-    try {
-      setIsLoadingTags(true)
-      const tags = await getEquipmentTags(search)
-      setEquipmentTags(tags)
-    } catch (error) {
-      console.error('Failed to load equipment tags:', error)
-    } finally {
-      setIsLoadingTags(false)
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const tags = await getEquipmentTags()
+        setEquipmentTags(tags)
+      } catch (error) {
+        console.error('Failed to load equipment tags:', error)
+      }
     }
+    loadTags()
   }, [])
 
-  useEffect(() => {
-    loadTags()
-  }, [loadTags])
+  const getEquipmentLabel = (value: string) => {
+    return value
+  }
 
   const handleSubmit = async (data: NewInspectionFormValues) => {
     try {
@@ -92,9 +91,10 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
                       options={equipmentTags}
                       placeholder="Select equipment tag"
                       searchPlaceholder="Search equipment tag..."
-                      isLoading={isLoadingTags}
-                      disabled={isSubmitting}
+                      getOptionLabel={getEquipmentLabel}
                       error={!!form.formState.errors.equipmentTag}
+                      disabled={isSubmitting}
+                      className="w-full"
                     />
                   </FormControl>
                   <FormMessage className="text-xs" />
@@ -151,8 +151,8 @@ export const NewInspectionForm: FC<NewInspectionFormProps> = ({ onSubmit }) => {
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
               className="h-10"
             >
