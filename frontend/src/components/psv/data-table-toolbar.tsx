@@ -15,11 +15,10 @@ interface DataTableToolbarProps<TData> {
 }
 
 interface PSVData {
-  lastCalibrationDate?: string;
-  nextCalibrationDate?: string;
-  tag?: string;
+  last_calibration_date?: string;
+  expire_date?: string;
+  tag_number?: string;
   type?: string;
-  testMedium?: string;
 }
 
 export function DataTableToolbar<TData extends PSVData>({
@@ -31,13 +30,6 @@ export function DataTableToolbar<TData extends PSVData>({
     { label: "Open Bonnet", value: "OPEN_BONNET" },
     { label: "Pilot", value: "PILOT" },
     { label: "Other", value: "OTHER" },
-  ];
-
-  const testMediums = [
-    { label: "Air", value: "AIR" },
-    { label: "Water", value: "WATER" },
-    { label: "Nitrogen", value: "NITROGEN" },
-    { label: "Steam", value: "STEAM" },
   ];
 
   const handleDateRangeChange = (range: DateRange | undefined, field: DateField) => {
@@ -71,9 +63,9 @@ export function DataTableToolbar<TData extends PSVData>({
         <div className="flex flex-1 items-center space-x-2">
           <Input
             placeholder="Filter PSV tags..."
-            value={(table.getColumn("tag")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("tag_number")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("tag")?.setFilterValue(event.target.value)
+              table.getColumn("tag_number")?.setFilterValue(event.target.value)
             }
             className="h-8 w-[150px] lg:w-[250px]"
           />
@@ -82,13 +74,6 @@ export function DataTableToolbar<TData extends PSVData>({
               column={table.getColumn("type")}
               title="Type"
               options={psvTypes}
-            />
-          )}
-          {table.getColumn("testMedium") && (
-            <DataTableFacetedFilter
-              column={table.getColumn("testMedium")}
-              title="Test Medium"
-              options={testMediums}
             />
           )}
           {isFiltered && (

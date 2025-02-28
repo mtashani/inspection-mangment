@@ -1,33 +1,54 @@
-# Inspection Status Fix Plan
+# PSV Data Table Toolbar Fix Plan
 
 ## Current Issues
-1. Status case mismatch between frontend and backend
-2. Improper data seeding leading to inconsistent statuses
-3. Incorrect status filtering
+1. Column mismatch: Frontend tries to access "tag" but the actual column is "tag_number"
+2. Non-existent column: "testMedium" filter is being used but this field doesn't exist in the PSV table
 
-## Solution Plan
+## Required Changes
 
-1. Data Model Changes
-- Update InspectionStatus enum to uppercase values
-- Update seed data logic
-- Create data migration script
+### 1. Update Tag Number Filter
+In `frontend/src/components/psv/data-table-toolbar.tsx`:
+```typescript
+// Change from:
+value={(table.getColumn("tag")?.getFilterValue() as string) ?? ""}
+onChange={(event) =>
+  table.getColumn("tag")?.setFilterValue(event.target.value)
+}
 
-2. Backend Updates
-- Modify API endpoints to handle uppercase status values
-- Update status validation and filtering logic
-- Add data consistency checks
+// Change to:
+value={(table.getColumn("tag_number")?.getFilterValue() as string) ?? ""}
+onChange={(event) =>
+  table.getColumn("tag_number")?.setFilterValue(event.target.value)
+}
+```
 
-3. Frontend Updates
-- Update status type definitions
-- Modify status filtering components
-- Update UI status display handling
+### 2. Remove Test Medium Filter
+In `frontend/src/components/psv/data-table-toolbar.tsx`:
+- Remove the testMediums array
+- Remove the test medium filter section:
+```typescript
+{table.getColumn("testMedium") && (
+  <DataTableFacetedFilter
+    column={table.getColumn("testMedium")}
+    title="Test Medium"
+    options={testMediums}
+  />
+)}
+```
 
-4. Implementation Steps
-1. Back up current database
-2. Update models and enums
-3. Create migration for existing data
-4. Update frontend code
-5. Test status filtering
-6. Verify data consistency
+### 3. Update PSVData Interface
+In `frontend/src/components/psv/data-table-toolbar.tsx`:
+```typescript
+interface PSVData {
+  last_calibration_date?: string; // Changed from lastCalibrationDate
+  expire_date?: string;           // Changed from nextCalibrationDate
+  tag_number?: string;            // Changed from tag
+  type?: string;
+  // Remove testMedium as it's not part of PSV data
+}
+```
 
-This fix will ensure consistent status handling across the entire application stack and resolve the filtering issues.
+## Implementation Notes
+- These changes align the frontend with the actual backend data structure
+- The test medium filter should be moved to a separate calibration management interface if needed
+- The PSVData interface should match the column definitions in psv-data-table.tsx

@@ -5,8 +5,9 @@ from .routers import (
     equipment_router,
     inspections_router,
     daily_reports_router,
-    inspectors_router
+    inspectors_router,
 )
+from .routers.psv import router as psv_router
 import uvicorn
 from dotenv import load_dotenv
 import os
@@ -15,8 +16,8 @@ import os
 load_dotenv()
 
 app = FastAPI(
-    title="Industrial Equipment Inspection API",
-    description="API for managing industrial equipment inspections and risk assessments based on API 581",
+    title="Industrial Equipment and PSV Management API",
+    description="API for managing industrial equipment inspections, PSV maintenance, and risk assessments based on API 581",
     version="1.0.0"
 )
 
@@ -42,6 +43,7 @@ app.include_router(equipment_router, prefix="/api/equipment", tags=["equipment"]
 app.include_router(inspections_router, prefix="/api/inspections", tags=["inspections"])
 app.include_router(daily_reports_router, prefix="/api/daily-reports", tags=["daily-reports"])
 app.include_router(inspectors_router, prefix="/api/inspectors", tags=["inspectors"])
+app.include_router(psv_router, prefix="/api", tags=["PSV Management"])
 
 @app.on_event("startup")
 async def on_startup():
