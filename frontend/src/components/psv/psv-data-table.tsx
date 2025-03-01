@@ -24,18 +24,26 @@ import Link from "next/link";
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
-// Define columns for the PSV table
 const columns: ColumnDef<PSV>[] = [
+  // Default visible columns in specified order
   {
     accessorKey: "tag_number",
     header: "PSV Tag",
-    cell: ({ row }) => {
-      return (
-        <Link href={`/psv/${row.getValue("tag_number")}`} className="hover:underline">
+    cell: ({ row }) => (
+      <div className="max-w-[200px]">
+        <Link 
+          href={`/psv/${row.getValue("tag_number")}`} 
+          className="hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
+          title={row.getValue("tag_number")}
+        >
           {row.getValue("tag_number")}
         </Link>
-      );
-    },
+      </div>
+    ),
+  },
+  {
+    accessorKey: "unique_no",
+    header: "Unique No",
   },
   {
     accessorKey: "status",
@@ -43,11 +51,7 @@ const columns: ColumnDef<PSV>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const variant: BadgeVariant = status === "Main" ? "default" : "secondary";
-      return (
-        <Badge variant={variant}>
-          {status}
-        </Badge>
-      );
+      return <Badge variant={variant}>{status}</Badge>;
     },
   },
   {
@@ -59,22 +63,12 @@ const columns: ColumnDef<PSV>[] = [
     header: "Train",
   },
   {
-    accessorKey: "service",
-    header: "Service",
-  },
-  {
-    accessorKey: "set_pressure",
-    header: "Set Pressure",
-    cell: ({ row }) => `${row.getValue("set_pressure")} Barg`,
-  },
-  {
     accessorKey: "last_calibration_date",
     header: "Last Calibration",
     cell: ({ row }) => {
       const date = row.getValue("last_calibration_date");
       if (!date) return "Never";
-      const parsedDate = new Date(date as string);
-      return parsedDate.toLocaleDateString("en-US", {
+      return new Date(date as string).toLocaleDateString("en-US", {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
@@ -92,11 +86,8 @@ const columns: ColumnDef<PSV>[] = [
       const daysUntilDue = Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
       let variant: BadgeVariant = "default";
-      if (daysUntilDue < 0) {
-        variant = "destructive";
-      } else if (daysUntilDue < 30) {
-        variant = "secondary";
-      }
+      if (daysUntilDue < 0) variant = "destructive";
+      else if (daysUntilDue < 30) variant = "secondary";
 
       return (
         <Badge variant={variant}>
@@ -109,15 +100,23 @@ const columns: ColumnDef<PSV>[] = [
       );
     },
   },
+
+  // Optional columns (hidden by default)
+  {
+    accessorKey: "service",
+    header: "Service",
+  },
+  {
+    accessorKey: "set_pressure",
+    header: "Set Pressure",
+    cell: ({ row }) => `${row.getValue("set_pressure")} Barg`,
+  },
   {
     accessorKey: "type",
     header: "Type",
     cell: ({ row }) => {
       const type = row.getValue("type") as string;
       return type.replace("_", " ").toLowerCase();
-    },
-    filterFn: (row, id, value: string[]) => {
-      return value.includes(row.getValue(id));
     },
   },
   {
@@ -127,10 +126,6 @@ const columns: ColumnDef<PSV>[] = [
   {
     accessorKey: "serial_no",
     header: "Serial No",
-  },
-  {
-    accessorKey: "unique_no",
-    header: "Unique No",
   },
   {
     accessorKey: "cdtp",
@@ -172,8 +167,29 @@ interface PSVDataTableProps {
 export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    // Show only the requested columns by default
+    tag_number: true,
+    unique_no: true,
+    status: true,
+    unit: true,
+    train: true,
+    last_calibration_date: true,
+    expire_date: true,
+    // Hide other columns by default
+    service: false,
+    set_pressure: false,
+    type: false,
+    manufacturer: false,
+    serial_no: false,
+    cdtp: false,
+    back_pressure: false,
+    nps: false,
+    p_and_id: false,
+    line_number: false,
+    inlet_size: false,
+    outlet_size: false,
+  });
 
   const table = useReactTable({
     data,
@@ -182,10 +198,7 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
     },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -222,7 +235,7 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="whitespace-nowrap">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -240,7 +253,6 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
                   className={getRowClassName(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
