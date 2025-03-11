@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from functools import lru_cache
 from ...psv_models import PSV, Calibration, RBIConfiguration, ServiceRiskCategory
 
@@ -182,3 +182,38 @@ def calculate_rbi_level_4(
     next_date = datetime.utcnow() + timedelta(days=interval * 30)
     
     return risk_score, pof_score, cof_score, risk_category, interval, next_date
+
+def calculate_rbi_distribution(
+    psv: PSV,
+    calibrations: List[Calibration],
+    service_risk: Optional[ServiceRiskCategory],
+    active_configs: Dict[int, RBIConfiguration]
+) -> Dict[str, int]:
+    """
+    Calculate which RBI level a PSV belongs to based on available data.
+    Returns a dictionary with count of 1 for the applicable level
+    and 0 for others.
+    """
+    # Initialize distribution with all zeros
+    distribution = {
+        "level1": 0,
+        "level2": 0,
+        "level3": 0,
+        "level4": 0
+    }
+    
+    # Determine the highest applicable RBI level for this PSV
+    if service_risk and active_configs.get(4) and calibrations:
+        # PSV qualifies for level 4 if it has calibrations and service risk data
+        distribution["level4"] = 1
+    elif active_configs.get(3) and calibrations:
+        # PSV qualifies for level 3 if it has calibrations
+        distribution["level3"] = 1
+    elif active_configs.get(2) and calibrations:
+        # PSV qualifies for level 2 if it has calibrations
+        distribution["level2"] = 1
+    else:
+        # Default to level 1 for all other cases
+        distribution["level1"] = 1
+    
+    return distribution
