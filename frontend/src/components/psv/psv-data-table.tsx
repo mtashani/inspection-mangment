@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -57,10 +57,57 @@ const columns: ColumnDef<PSV>[] = [
   {
     accessorKey: "unit",
     header: "Unit",
+    filterFn: (row, id, filterValue) => {
+      // Special handling for array filter values (OR condition)
+      const value = row.getValue(id) as string;
+      if (!value) return false;
+      
+      // If we have an array of filter values, check if the row value is in that array
+      if (Array.isArray(filterValue)) {
+        return filterValue.includes(value);
+      }
+      
+      // Default behavior
+      return value === filterValue;
+    }
   },
   {
     accessorKey: "train",
     header: "Train",
+    filterFn: (row, id, filterValue) => {
+      // Special handling for array filter values (OR condition)
+      const value = row.getValue(id) as string;
+      if (!value) return false;
+      
+      // If we have an array of filter values, check if the row value is in that array
+      if (Array.isArray(filterValue)) {
+        return filterValue.includes(value);
+      }
+      
+      // Default behavior
+      return value === filterValue;
+    }
+  },
+  {
+    accessorKey: "type",
+    header: "Type",
+    cell: ({ row }) => {
+      const type = row.getValue("type") as string;
+      return type ? type.replace("_", " ").toLowerCase() : '';
+    },
+    filterFn: (row, id, filterValue) => {
+      // Special handling for array filter values (OR condition)
+      const value = row.getValue(id) as string;
+      if (!value) return false;
+      
+      // If we have an array of filter values, check if the row value is in that array
+      if (Array.isArray(filterValue)) {
+        return filterValue.includes(value);
+      }
+      
+      // Default behavior
+      return value === filterValue;
+    }
   },
   {
     accessorKey: "last_calibration_date",
@@ -85,18 +132,22 @@ const columns: ColumnDef<PSV>[] = [
       const today = new Date();
       const daysUntilDue = Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      let variant: BadgeVariant = "default";
-      if (daysUntilDue < 0) variant = "destructive";
-      else if (daysUntilDue < 30) variant = "secondary";
-
+      
+      let className = "bg-yellow-50/30 px-2 py-1 rounded-md"; // Light yellow for normal
+      
+      if (daysUntilDue < 0) {
+        className = "bg-red-50 text-red-800 px-2 py-1 rounded-md"; // Red for expired
+      } else if (daysUntilDue < 30) {
+        className = "bg-yellow-50 text-yellow-800 px-2 py-1 rounded-md"; // Yellow for due soon
+      }
       return (
-        <Badge variant={variant}>
+        <span className={className}>
           {parsedDate.toLocaleDateString("en-US", {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
           })}
-        </Badge>
+        </span>
       );
     },
   },
@@ -110,14 +161,6 @@ const columns: ColumnDef<PSV>[] = [
     accessorKey: "set_pressure",
     header: "Set Pressure",
     cell: ({ row }) => `${row.getValue("set_pressure")} Barg`,
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const type = row.getValue("type") as string;
-      return type.replace("_", " ").toLowerCase();
-    },
   },
   {
     accessorKey: "manufacturer",
@@ -161,12 +204,16 @@ const columns: ColumnDef<PSV>[] = [
 
 interface PSVDataTableProps {
   data: PSV[];
-  showColorCoding?: boolean;
+  onFiltersChange?: (filters: ColumnFiltersState) => void;
 }
 
-export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps) {
+export function PSVDataTable({ data, onFiltersChange }: PSVDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  
+  // Track the latest filter value for debugging
+  const prevFiltersRef = useRef<string>("");
+  
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     // Show only the requested columns by default
     tag_number: true,
@@ -174,12 +221,12 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
     status: true,
     unit: true,
     train: true,
+    type: true,
     last_calibration_date: true,
     expire_date: true,
     // Hide other columns by default
     service: false,
     set_pressure: false,
-    type: false,
     manufacturer: false,
     serial_no: false,
     cdtp: false,
@@ -191,9 +238,58 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
     outlet_size: false,
   });
 
+  // Use debounce to prevent excessive updates
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Create stable columns
+  const stableColumns = useMemo(() => columns, []);
+  
+  // Function to handle filter reset from the toolbar
+  const handleResetFilters = () => {
+    // Reset our own component state
+    setColumnFilters([]);
+    
+    // Also notify parent component
+    if (onFiltersChange) {
+      onFiltersChange([]);
+    }
+    
+    console.log("PSV Data Table - All filters reset");
+  };
+  
+  // Notify parent about filter changes (with debounce)
+  useEffect(() => {
+    if (!onFiltersChange) return;
+    
+    // Convert filters to string for comparison
+    const currentFiltersString = JSON.stringify(columnFilters);
+    
+    // Only update if the filter value has actually changed
+    if (prevFiltersRef.current !== currentFiltersString) {
+      console.log('PSV Data Table - Column filters changed:', columnFilters);
+      prevFiltersRef.current = currentFiltersString;
+      
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
+        onFiltersChange(columnFilters);
+      }, 300);
+    }
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [columnFilters, onFiltersChange]);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: stableColumns,
     state: {
       sorting,
       columnFilters,
@@ -210,24 +306,12 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
-  const getRowClassName = (row: PSV) => {
-    if (!showColorCoding) return "";
-    
-    const today = new Date();
-    const expireDate = new Date(row.expire_date);
-    const daysUntilDue = Math.ceil((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysUntilDue < 0) {
-      return "bg-red-50 hover:bg-red-100";
-    } else if (daysUntilDue < 30) {
-      return "bg-yellow-50 hover:bg-yellow-100";
-    }
-    return "";
-  };
-
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar 
+        table={table} 
+        resetFilters={handleResetFilters}
+      />
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -253,7 +337,6 @@ export function PSVDataTable({ data, showColorCoding = true }: PSVDataTableProps
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className={getRowClassName(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

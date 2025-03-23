@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,16 +10,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PSVCalibrationForm } from "./psv-calibration-form";
 import { Calibration, RBILevel, PSV } from "./types";
-import { FormLabel } from "@/components/ui/form";
+import { getAppropriateRBILevel } from "@/api/rbi";
+import { Loader2 } from "lucide-react";
 
 // Define the form data type without created_at and id fields
 interface CalibrationFormData {
@@ -46,17 +40,48 @@ interface CalibrationFormData {
 interface PSVCalibrationDialogProps {
   psv: PSV;
   onCalibrationComplete: (calibration: Calibration) => void;
-  defaultRbiLevel?: RBILevel;
 }
 
 export function PSVCalibrationDialog({
   psv,
   onCalibrationComplete,
-  defaultRbiLevel = 1,
 }: PSVCalibrationDialogProps) {
   const [open, setOpen] = useState(false);
-  const [rbiLevel, setRbiLevel] = useState<RBILevel>(defaultRbiLevel);
+  const [rbiLevel, setRbiLevel] = useState<RBILevel | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch appropriate RBI level when dialog opens
+  useEffect(() => {
+    async function loadRBILevel() {
+      if (!open || rbiLevel !== null) return;
+      
+      try {
+        setIsLoading(true);
+        // Use the function that leverages existing RBI calculation
+        const level = await getAppropriateRBILevel(psv.tag_number);
+        setRbiLevel(level);
+      } catch (err) {
+        console.error("Failed to fetch RBI level:", err);
+        setError("Failed to determine appropriate RBI level. Using default level.");
+        setRbiLevel(1); // Default to level 1 on error
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadRBILevel();
+  }, [open, psv.tag_number, rbiLevel]);
+
+  // Reset state when dialog closes
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setRbiLevel(null); // Reset when closing
+      setError(null);
+    }
+  };
 
   const handleSubmit = async (formData: CalibrationFormData) => {
     try {
@@ -88,16 +113,16 @@ export function PSVCalibrationDialog({
       setOpen(false);
     } catch (error) {
       console.error("Error saving calibration:", error);
-      // You might want to show an error toast/notification here
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="default">New Calibration</Button>
+        <Button variant="default">Add New Calibration</Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
@@ -108,45 +133,47 @@ export function PSVCalibrationDialog({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div>
-            <FormLabel>RBI Level</FormLabel>
-            <Select
-              value={rbiLevel.toString()}
-              onValueChange={(value) => setRbiLevel(parseInt(value) as RBILevel)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select RBI level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Level 1 - Fixed Interval</SelectItem>
-                <SelectItem value="2">Level 2 - Test Results Based</SelectItem>
-                <SelectItem value="3">Level 3 - Condition Based</SelectItem>
-                <SelectItem value="4">Level 4 - Risk Based (API 581)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="text-red-500 mb-4">
+              {error}
+            </div>
+          ) : null}
 
-          <PSVCalibrationForm
-            rbiLevel={rbiLevel}
-            onSubmit={handleSubmit}
-            defaultValues={{
-              calibration_date: new Date(),
-              test_medium: "Air",
-              work_maintenance: "Adjust",
-            }}
-          />
+          {rbiLevel !== null && (
+            <div className="space-y-6">
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm">Using RBI Level: {rbiLevel}</p>
+              </div>
+
+              <PSVCalibrationForm
+                rbiLevel={rbiLevel}
+                onSubmit={handleSubmit}
+                defaultValues={{
+                  calibration_date: new Date(),
+                  test_medium: "Air",
+                  work_maintenance: "Adjust",
+                }}
+              />
+            </div>
+          )}
           
           <div className="flex justify-end space-x-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
             >
               Cancel
             </Button>
-            <Button disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Calibration"}
-            </Button>
+            {rbiLevel !== null && !isLoading && (
+              <Button disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Calibration"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

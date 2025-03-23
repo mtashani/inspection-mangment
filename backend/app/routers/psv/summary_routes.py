@@ -51,6 +51,10 @@ def get_psv_summary(db: Session = Depends(get_session)):
         # Never calibrated queries
         main_never_cal = main_count.filter(PSV.last_calibration_date.is_(None))
         spare_never_cal = spare_count.filter(PSV.last_calibration_date.is_(None))
+        
+        # Under calibration queries (PSVs with valid calibration)
+        main_under_cal = main_count.filter(PSV.expire_date > now)
+        spare_under_cal = spare_count.filter(PSV.expire_date > now)
 
         # Get all PSVs and their calibrations for RBI calculation
         all_psvs = db.exec(select(PSV)).all()
@@ -84,8 +88,8 @@ def get_psv_summary(db: Session = Depends(get_session)):
                 "spare": db.exec(spare_count.with_only_columns(func.count())).first()
             },
             "underCalibration": {
-                "main": 0,  # TODO: Add when under_calibration status is implemented
-                "spare": 0
+                "main": db.exec(main_under_cal.with_only_columns(func.count())).first(),
+                "spare": db.exec(spare_under_cal.with_only_columns(func.count())).first()
             },
             "outOfCalibration": {
                 "main": db.exec(main_out_of_cal.with_only_columns(func.count())).first(),

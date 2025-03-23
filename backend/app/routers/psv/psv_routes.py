@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, distinct, or_
 from ...database import get_session
 from ...psv_models import PSV, PSVStatus
 
-router = APIRouter(tags=["PSV Management"])
+router = APIRouter()
 
 @router.get("/", response_model=List[PSV])
 def get_psvs(
@@ -15,7 +15,9 @@ def get_psvs(
     tag_number: Optional[str] = None,
     status: Optional[PSVStatus] = None,
     service: Optional[str] = None,
-    unit: Optional[str] = None,
+    unit: Optional[List[str]] = None,
+    type: Optional[List[str]] = None,
+    train: Optional[List[str]] = None,
     db: Session = Depends(get_session)
 ):
     """Get list of PSVs with optional filtering"""
@@ -26,8 +28,21 @@ def get_psvs(
         query = query.filter(PSV.status == status)
     if service:
         query = query.filter(PSV.service.contains(service))
-    if unit:
-        query = query.filter(PSV.unit.contains(unit))
+    
+    # Handle multiple unit values with OR condition
+    if unit and len(unit) > 0:
+        unit_filters = [PSV.unit == u for u in unit]
+        query = query.filter(or_(*unit_filters))
+    
+    # Handle multiple type values with OR condition
+    if type and len(type) > 0:
+        type_filters = [PSV.type == t for t in type]
+        query = query.filter(or_(*type_filters))
+    
+    # Handle multiple train values with OR condition
+    if train and len(train) > 0:
+        train_filters = [PSV.train == t for t in train]
+        query = query.filter(or_(*train_filters))
     
     return db.exec(query.offset(skip).limit(limit)).all()
 
@@ -92,6 +107,36 @@ def get_psv_summary(db: Session = Depends(get_session)):
 
     return summary
 
+@router.get("/types", response_model=List[str])
+def get_psv_types(db: Session = Depends(get_session)):
+    """Get all unique PSV types"""
+    result = db.exec(select(distinct(PSV.type))).all()
+    return [r for r in result if r] # Filter out None values
+
+@router.get("/units", response_model=List[str])
+def get_psv_units(db: Session = Depends(get_session)):
+    """Get all unique PSV units"""
+    result = db.exec(select(distinct(PSV.unit))).all()
+    return [r for r in result if r] # Filter out None values
+
+@router.get("/trains", response_model=List[str])
+def get_psv_trains(db: Session = Depends(get_session)):
+    """Get all unique PSV trains"""
+    result = db.exec(select(distinct(PSV.train))).all()
+    return [r for r in result if r]  # Filter out None values
+
+@router.post("/", response_model=PSV)
+def create_psv(psv: PSV, db: Session = Depends(get_session)):
+    """Create new PSV"""
+    db.add(psv)
+    try:
+        db.commit()
+        db.refresh(psv)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    return psv
+
 @router.get("/{tag_number}", response_model=PSV)
 def get_psv(tag_number: str, db: Session = Depends(get_session)):
     """Get PSV by tag number"""
@@ -105,18 +150,6 @@ def get_psv(tag_number: str, db: Session = Depends(get_session)):
             status_code=404,
             detail=f"PSV with tag number '{tag_number}' not found"
         )
-    return psv
-
-@router.post("/", response_model=PSV)
-def create_psv(psv: PSV, db: Session = Depends(get_session)):
-    """Create new PSV"""
-    db.add(psv)
-    try:
-        db.commit()
-        db.refresh(psv)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
     return psv
 
 @router.put("/{tag_number}", response_model=PSV)

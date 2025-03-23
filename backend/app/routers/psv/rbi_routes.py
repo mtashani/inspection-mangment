@@ -44,6 +44,48 @@ def create_rbi_config(
         raise HTTPException(status_code=400, detail=str(e))
     return config
 
+@router.put("/config/{config_id}", response_model=RBIConfiguration)
+def update_rbi_config(
+    config_id: int,
+    config_update: RBIConfiguration,
+    db: Session = Depends(get_session)
+):
+    """Update existing RBI configuration"""
+    db_config = db.get(RBIConfiguration, config_id)
+    if not db_config:
+        raise HTTPException(status_code=404, detail="Configuration not found")
+    
+    # Update configuration fields
+    config_data = config_update.dict(exclude_unset=True)
+    config_data["updated_at"] = datetime.utcnow()
+    
+    for key, value in config_data.items():
+        setattr(db_config, key, value)
+    
+    # If this config is active, deactivate other configs at the same level
+    if config_data.get("active") is True:
+        # Get all other configurations at the same level
+        other_configs = db.exec(
+            select(RBIConfiguration)
+            .filter(
+                RBIConfiguration.id != config_id,
+                RBIConfiguration.level == db_config.level,
+                RBIConfiguration.active == True
+            )
+        ).all()
+        
+        # Deactivate them
+        for other_config in other_configs:
+            other_config.active = False
+    
+    try:
+        db.commit()
+        db.refresh(db_config)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    return db_config
+
 @router.post("/{tag_number}/calculate")
 def calculate_rbi(
     tag_number: str,
@@ -279,6 +321,68 @@ def calculate_trend(values: List[float]) -> float:
     numerator = sum((xi - x_mean) * (yi - y_mean) for xi, yi in zip(x, values))
     denominator = sum((xi - x_mean) ** 2 for xi in x)
     return numerator / denominator if denominator != 0 else 0
+
+def calculate_test_statistics(calibrations: List[Calibration]) -> Dict:
+    """Calculate statistics from calibration test results"""
+    if not calibrations:
+        return {
+            "pop_test": {"avg": None, "trend": 0},
+            "leak_test": {"avg": None, "trend": 0}
+        }
+    
+    # Extract test values
+    pop_tests = [c.post_repair_pop_test for c in calibrations if c.post_repair_pop_test is not None]
+    leak_tests = [c.post_repair_leak_test for c in calibrations if c.post_repair_leak_test is not None]
+    
+    # Calculate averages
+    pop_avg = sum(pop_tests) / len(pop_tests) if pop_tests else None
+    leak_avg = sum(leak_tests) / len(leak_tests) if leak_tests else None
+    
+    # Calculate trends if enough data
+    pop_trend = calculate_trend(pop_tests) if len(pop_tests) >= 2 else 0
+    leak_trend = calculate_trend(leak_tests) if len(leak_tests) >= 2 else 0
+    
+    return {
+        "pop_test": {
+            "avg": pop_avg,
+            "trend": pop_trend
+        },
+        "leak_test": {
+            "avg": leak_avg,
+            "trend": leak_trend
+        }
+    }
+
+def analyze_maintenance_patterns(calibrations: List[Calibration]) -> Dict:
+    """Analyze maintenance patterns from calibration history"""
+    if not calibrations:
+        return {
+            "repair_frequency": 0,
+            "common_repairs": [],
+            "avg_condition_score": None
+        }
+    
+    # Simplified implementation - can be expanded based on requirements
+    condition_scores = []
+    for cal in calibrations:
+        scores = []
+        if cal.body_condition_score:
+            scores.append(cal.body_condition_score)
+        if cal.internal_parts_score:
+            scores.append(cal.internal_parts_score)
+        if cal.seat_plug_condition_score:
+            scores.append(cal.seat_plug_condition_score)
+        
+        if scores:
+            condition_scores.append(sum(scores) / len(scores))
+    
+    avg_score = sum(condition_scores) / len(condition_scores) if condition_scores else None
+    
+    return {
+        "repair_frequency": 0,  # Would require work_maintenance analysis over time
+        "common_repairs": [],   # Would require analysis of change_parts field
+        "avg_condition_score": avg_score
+    }
 
 def generate_recommendations(trend_data: List[Dict]) -> List[str]:
     """Generate recommendations based on trend analysis"""

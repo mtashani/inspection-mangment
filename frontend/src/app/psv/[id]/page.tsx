@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
-import { PSVCalibrationDialog } from "@/components/psv/psv-calibration-dialog";
+import { PSVCalibrationDrawer } from "@/components/psv/psv-calibration-drawer";
 import { CalibrationCertificate } from "@/components/psv/calibration-certificate";
 import { format } from "date-fns";
 import { Loader2, Printer } from "lucide-react";
@@ -87,6 +87,8 @@ export default function PSVDetailsPage() {
 
   const getCalibrationStatus = (psv: PSV): CalibrationStatus => {
     if (!psv.last_calibration_date) return "NEVER_CALIBRATED";
+    if (!psv.expire_date) return "NEVER_CALIBRATED";
+    
     const now = new Date();
     const expireDate = new Date(psv.expire_date);
     const monthUntilExpire = (expireDate.getTime() - now.getTime()) / (30 * 24 * 60 * 60 * 1000);
@@ -245,19 +247,12 @@ export default function PSVDetailsPage() {
 
       {/* TODO: Add Calibration History section once the API is ready */}
       <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Calibration History</h3>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Add New Calibration</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <PSVCalibrationDialog 
-              psv={psv}
-              onCalibrationComplete={() => window.location.reload()}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+       <h3 className="text-lg font-semibold">Calibration History</h3>
+       <PSVCalibrationDrawer
+         psv={psv}
+         onCalibrationComplete={() => window.location.reload()}
+       />
+     </div>
 
       <Card>
         <Table>

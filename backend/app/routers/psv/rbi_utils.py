@@ -87,9 +87,14 @@ def get_risk_category(risk_score: float) -> str:
         return "High Risk"
 
 def calculate_rbi_level_1(psv: PSV, config: RBIConfiguration) -> Tuple[int, datetime]:
-    """Calculate fixed interval for RBI Level 1"""
-    interval = config.settings.get("fixed_interval", 24)  # Default 24 months
-    next_date = datetime.utcnow() + timedelta(days=interval * 30)  # Approximate months
+    """Calculate fixed interval for RBI Level 1 using the PSV's frequency field"""
+    # Use the PSV's frequency field instead of config settings
+    interval = psv.frequency
+    
+    # If no calibration date exists, use current date as base
+    base_date = psv.last_calibration_date if psv.last_calibration_date else datetime.utcnow()
+    next_date = base_date + timedelta(days=interval * 30)  # Approximate months
+    
     return interval, next_date
 
 def calculate_rbi_level_2(

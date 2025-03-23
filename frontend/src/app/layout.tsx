@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/sidebar/sidebar"
 import { MobileSidebar } from "@/components/layout/sidebar/mobile-sidebar"
 import { SidebarProvider } from "@/contexts/sidebar-context"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/toast"
 
 const vazirmatn = Vazirmatn({ subsets: ["arabic"] })
 
@@ -44,6 +45,7 @@ export default function RootLayout({
             </div>
           </SidebarProvider>
         </TooltipProvider>
+        <Toaster />
       </body>
     </html>
   )

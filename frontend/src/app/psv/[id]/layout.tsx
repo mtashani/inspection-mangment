@@ -28,7 +28,7 @@ export default function PSVLayout({
             <TabsTrigger value="details">Details</TabsTrigger>
           </Link>
           <Link href={`/psv/${params.id}/settings`}>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="settings">RBI Calculation</TabsTrigger>
           </Link>
           <Link href={`/psv/${params.id}/analytics`}>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
