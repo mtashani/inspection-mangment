@@ -194,3 +194,91 @@ export async function fetchPSVTrains(): Promise<string[]> {
     return ["Train A", "Train B", "Train C", "Train D"];
   }
 }
+
+// Add a new API function to update a calibration record
+export async function updateCalibration(id: number, calibrationData: Partial<Calibration>): Promise<Calibration> {
+  try {
+    console.log(`Updating calibration ID ${id} with data:`, calibrationData);
+    
+    // Make sure ID is a number
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      throw new Error(`Invalid calibration ID: ${id}`);
+    }
+    
+    // Connect directly to the backend API for updates
+    const url = `${API_URL}/api/psv/calibration/${numericId}`;
+    console.log(`Making PUT request to: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(calibrationData)
+    });
+    
+    console.log("Update API route response status:", response.status);
+    console.log("Update API route response status text:", response.statusText);
+
+    // For debugging
+    console.log('Update response status:', response.status);
+    
+    if (!response.ok) {
+      let errorDetail = 'Unknown error';
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.detail || `Status ${response.status}: ${response.statusText}`;
+      } catch {
+        // Couldn't parse JSON error response
+        errorDetail = `Failed to parse error: ${response.statusText}`;
+      }
+      
+      console.error('Error updating calibration:', errorDetail);
+      throw new Error(errorDetail);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in updateCalibration function:', error);
+    throw error;
+  }
+}
+
+// Add a new API function to delete a calibration record
+export async function deleteCalibration(id: number): Promise<void> {
+  try {
+    console.log(`Deleting calibration with ID: ${id}`);
+    
+    // Connect directly to the backend API for deletion
+    const url = `${API_URL}/api/psv/calibration/${id}`;
+    console.log(`Making DELETE request to: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Accept': '*/*'
+      }
+    });
+
+    console.log('Delete response status:', response.status);
+    
+    if (!response.ok) {
+      let errorDetail = 'Unknown error';
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.detail || `Status ${response.status}: ${response.statusText}`;
+      } catch {
+        // Couldn't parse JSON error response
+        errorDetail = `Failed to parse error: ${response.statusText}`;
+      }
+      
+      console.error('Error deleting calibration:', errorDetail);
+      throw new Error(errorDetail);
+    }
+  } catch (error) {
+    console.error('Error in deleteCalibration function:', error);
+    throw error;
+  }
+}

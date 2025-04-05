@@ -11,24 +11,11 @@ import {
   SheetTrigger,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { PSVCalibrationFormCompact } from "./psv-calibration-form-compact";
+import { CustomCalibrationForm, CustomCalibrationFormData } from "./custom-calibration-form";
 import { Calibration, RBILevel, PSV } from "./types";
 import { getAppropriateRBILevel } from "@/api/rbi";
 import { Loader2, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-// Define the form data type without created_at and id fields
-interface CalibrationFormData {
-  calibration_date: Date;
-  work_maintenance: "Adjust" | "Cleaning" | "Lapping";
-  test_medium: "Nitrogen" | "Air" | "Steam" | "Water";
-  inspector: string;
-  test_operator: string;
-  work_no: string;
-  post_repair_pop_test: number;
-  post_repair_leak_test: number;
-  general_condition?: string;
-}
 
 interface PSVCalibrationDrawerProps {
   psv: PSV;
@@ -76,34 +63,74 @@ export function PSVCalibrationDrawer({
     }
   };
 
-  const handleSubmit = async (formData: CalibrationFormData) => {
+  const handleSubmit = async (formData: CustomCalibrationFormData) => {
     try {
       setIsSubmitting(true);
+      
+      // Process work_maintenance to ensure it's one of the allowed string values
+      let workMaintenance: "Adjust" | "Cleaning" | "Lapping";
+      
+      if (typeof formData.work_maintenance === 'string') {
+        // If it's already a string, ensure it's one of the allowed values
+        if (formData.work_maintenance === "Adjust" ||
+            formData.work_maintenance === "Cleaning" ||
+            formData.work_maintenance === "Lapping") {
+          workMaintenance = formData.work_maintenance;
+        } else {
+          // Default if the string is not one of the allowed values
+          workMaintenance = "Adjust";
+        }
+      } else if (formData.work_maintenance && typeof formData.work_maintenance === 'object') {
+        // Find the first selected maintenance type
+        const types: ("Adjust" | "Cleaning" | "Lapping")[] = [];
+        if (formData.work_maintenance.adjust) types.push("Adjust");
+        if (formData.work_maintenance.cleaning) types.push("Cleaning");
+        if (formData.work_maintenance.lapping) types.push("Lapping");
+        
+        // Use the first selected type or default to "Adjust"
+        workMaintenance = types.length > 0 ? types[0] : "Adjust";
+      } else {
+        // Default value for any other unexpected cases
+        workMaintenance = "Adjust";
+      }
 
-      // Convert Date to ISO string for API
+      // Prepare the data for submission
       const calibrationData = {
-        ...formData,
         calibration_date: formData.calibration_date.toISOString(),
         tag_number: psv.tag_number,
         created_at: new Date().toISOString(),
+        test_medium: formData.test_medium,
+        inspector: formData.inspector,
+        test_operator: formData.test_operator,
+        approved_by: formData.approved_by,
+        work_no: formData.work_no,
+        work_maintenance: workMaintenance,
+        post_repair_pop_test: formData.post_repair_pop_test,
+        post_repair_leak_test: formData.post_repair_leak_test,
+        pre_repair_pop_test: formData.pre_repair_pop_test,
+        pre_repair_leak_test: formData.pre_repair_leak_test,
+        body_condition: formData.body_condition,
+        spring_condition: formData.spring_condition,
+        seat_tightness: formData.seat_tightness,
+        notes: formData.notes
       };
-
-      // Make API call to save calibration
-      const response = await fetch("/api/psv/calibrations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(calibrationData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save calibration");
+      
+      console.log("Submitting calibration data:", calibrationData);
+      // Use the API function from the shared module
+      const { saveCalibration } = await import('@/api/psv-calibration');
+      
+      try {
+        const savedCalibration = await saveCalibration(calibrationData);
+        onCalibrationComplete(savedCalibration);
+        setOpen(false);
+        return; // Exit early since we're using the API function
+      } catch (error) {
+        console.error("Error saving calibration:", error);
+        throw error;
       }
-
-      const savedCalibration = await response.json();
-      onCalibrationComplete(savedCalibration);
-      setOpen(false);
+      
+      
+      // Note: This code is no longer needed as we're using the saveCalibration function above
     } catch (error) {
       console.error("Error saving calibration:", error);
       setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -154,12 +181,25 @@ export function PSVCalibrationDrawer({
                 </Badge>
               </div>
 
-              <PSVCalibrationFormCompact
+              <CustomCalibrationForm
+                rbiLevel={rbiLevel}
                 onSubmit={handleSubmit}
                 defaultValues={{
                   calibration_date: new Date(),
                   test_medium: "Air",
-                  work_maintenance: "Adjust",
+                  work_maintenance: {
+                    adjust: true,
+                    cleaning: false,
+                    lapping: false
+                  },
+                  inspector: "",
+                  test_operator: "",
+                  approved_by: "",
+                  work_no: "",
+                  post_repair_pop_test: 0,
+                  post_repair_leak_test: 0,
+                  pre_repair_pop_test: undefined,
+                  pre_repair_leak_test: undefined
                 }}
               />
             </div>
@@ -175,7 +215,11 @@ export function PSVCalibrationDrawer({
             Cancel
           </Button>
           {rbiLevel !== null && !isLoading && (
-            <Button type="submit" form="calibration-form" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              form="calibration-form"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Saving..." : "Save Calibration"}
             </Button>
           )}

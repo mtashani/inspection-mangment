@@ -150,6 +150,27 @@ export async function fetchRBIConfigurations() {
 
 export async function createRBIConfiguration(data: Omit<RBIConfiguration, 'id' | 'created_at' | 'updated_at'>) {
   try {
+    // If creating an active configuration, deactivate all others first
+    if (data.active === true) {
+      console.log("Creating active configuration, deactivating others...");
+      // Get all configurations
+      const allConfigs = await fetchRBIConfigurations();
+      
+      // Deactivate each active config
+      for (const config of allConfigs) {
+        if (config.active) {
+          console.log(`Deactivating configuration: ${config.name} (ID: ${config.id})`);
+          await fetch(`${API_URL}/api/psv/rbi/config/${config.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ active: false }),
+          });
+        }
+      }
+    }
+
     const response = await fetch(`${API_URL}/api/psv/rbi/config`, {
       method: 'POST',
       headers: {
@@ -172,6 +193,28 @@ export async function createRBIConfiguration(data: Omit<RBIConfiguration, 'id' |
 
 export async function updateRBIConfiguration(id: number, data: Partial<Omit<RBIConfiguration, 'id' | 'created_at' | 'updated_at'>>) {
   try {
+    // If activating this configuration, first deactivate all others
+    if (data.active === true) {
+      console.log("Activating configuration, deactivating others...");
+      // Get all configurations
+      const allConfigs = await fetchRBIConfigurations();
+      
+      // Deactivate each active config except the one being updated
+      for (const config of allConfigs) {
+        if (config.id !== id && config.active) {
+          console.log(`Deactivating configuration: ${config.name} (ID: ${config.id})`);
+          await fetch(`${API_URL}/api/psv/rbi/config/${config.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ active: false }),
+          });
+        }
+      }
+    }
+
+    // Update the target configuration
     const response = await fetch(`${API_URL}/api/psv/rbi/config/${id}`, {
       method: 'PUT',
       headers: {

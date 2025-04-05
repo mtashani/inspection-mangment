@@ -121,25 +121,47 @@ export default function PSVSettingsPage() {
       }
 
       let result;
+      // Check if we're activating a configuration that wasn't active before
+      const isActivating = formData.active && (!activeConfig?.active);
+      
       if (activeConfig?.id) {
         // Update existing configuration
         result = await updateRBIConfiguration(activeConfig.id, formData);
-        toast({
-          title: "Configuration updated",
-          description: `RBI Configuration "${result.name}" has been updated successfully.`
-        });
+        
+        // Show appropriate toast based on whether we're activating this config
+        if (isActivating) {
+          toast({
+            title: "Configuration activated",
+            description: `RBI Configuration "${result.name}" has been activated. All other configurations have been deactivated.`
+          });
+        } else {
+          toast({
+            title: "Configuration updated",
+            description: `RBI Configuration "${result.name}" has been updated successfully.`
+          });
+        }
       } else {
         // Create new configuration
         result = await createRBIConfiguration({
           ...formData,
           level,
         });
-        toast({
-          title: "Configuration created",
-          description: `New RBI Configuration "${result.name}" has been created successfully.`
-        });
+        
+        // Show appropriate toast based on whether the new config is active
+        if (formData.active) {
+          toast({
+            title: "Configuration created and activated",
+            description: `New RBI Configuration "${result.name}" has been created and activated. All other configurations have been deactivated.`
+          });
+        } else {
+          toast({
+            title: "Configuration created",
+            description: `New RBI Configuration "${result.name}" has been created successfully.`
+          });
+        }
       }
 
+      // Reload all configurations to reflect changes in active status
       await loadConfigurations();
       setActiveConfig(result);
     } catch (error) {

@@ -6,9 +6,11 @@ from .routers import (
     inspections_router,
     daily_reports_router,
     inspectors_router,
+    corrosion_router,
 )
 from .routers.psv import router as psv_router
 from .routers.service_risk_router import router as service_risk_router
+from .routers.cranes import router as crane_router
 import uvicorn
 from dotenv import load_dotenv
 import os
@@ -46,6 +48,8 @@ app.include_router(daily_reports_router, prefix="/api/daily-reports", tags=["dai
 app.include_router(inspectors_router, prefix="/api/inspectors", tags=["inspectors"])
 app.include_router(service_risk_router, prefix="/api", tags=["Service Risk"])
 app.include_router(psv_router, prefix="/api", tags=["PSV Management"])
+app.include_router(corrosion_router, prefix="/api", tags=["Corrosion Monitoring"])
+app.include_router(crane_router, prefix="/api/cranes", tags=["Crane Management"])
 
 @app.on_event("startup")
 async def on_startup():

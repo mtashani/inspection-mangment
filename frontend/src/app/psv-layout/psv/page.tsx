@@ -231,56 +231,6 @@ export default function PSVPage() {
           dataCache.filters = {...filters};
           dataCache.timestamp = currentTime;
         }
-        
-        // Calculate summary from current PSV data
-        if (psvs && psvs.length > 0) {
-          const mainPSVs = psvs.filter(p => p.status === "Main");
-          const sparePSVs = psvs.filter(p => p.status === "Spare");
-          const currentDate = new Date();
-
-          const calculatedSummary = {
-            total: {
-              main: mainPSVs.length,
-              spare: sparePSVs.length
-            },
-            underCalibration: {
-              main: 0, 
-              spare: 0
-            },
-            outOfCalibration: {
-              main: mainPSVs.filter(p => p.expire_date && new Date(p.expire_date) < currentDate).length,
-              spare: sparePSVs.filter(p => p.expire_date && new Date(p.expire_date) < currentDate).length
-            },
-            dueNextMonth: {
-              main: mainPSVs.filter(p => {
-                if (!p.expire_date) return false;
-                const expireDate = new Date(p.expire_date);
-                const oneMonthFromNow = new Date(currentDate);
-                oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-                return expireDate <= oneMonthFromNow && expireDate >= currentDate;
-              }).length,
-              spare: sparePSVs.filter(p => {
-                if (!p.expire_date) return false;
-                const expireDate = new Date(p.expire_date);
-                const oneMonthFromNow = new Date(currentDate);
-                oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-                return expireDate <= oneMonthFromNow && expireDate >= currentDate;
-              }).length
-            },
-            neverCalibrated: {
-              main: mainPSVs.filter(p => !p.last_calibration_date).length,
-              spare: sparePSVs.filter(p => !p.last_calibration_date).length
-            },
-            rbiLevel: {
-              level1: 0,
-              level2: 0,
-              level3: 0,
-              level4: 0
-            }
-          };
-
-          setSummary(calculatedSummary);
-        }
       } catch (err) {
         console.error("Error loading PSV data:", err);
         setError(err instanceof Error ? err.message : 'Failed to load PSV data');
@@ -290,7 +240,59 @@ export default function PSVPage() {
     }
     
     loadData();
-  }, [filters, psvs]);
+  }, [filters]); // Remove psvs from dependency array to avoid circular updates
+
+  // Separate useEffect for calculating summary data based on psvs
+  useEffect(() => {
+    if (psvs && psvs.length > 0) {
+      const mainPSVs = psvs.filter(p => p.status === "Main");
+      const sparePSVs = psvs.filter(p => p.status === "Spare");
+      const currentDate = new Date();
+
+      const calculatedSummary = {
+        total: {
+          main: mainPSVs.length,
+          spare: sparePSVs.length
+        },
+        underCalibration: {
+          main: 0,
+          spare: 0
+        },
+        outOfCalibration: {
+          main: mainPSVs.filter(p => p.expire_date && new Date(p.expire_date) < currentDate).length,
+          spare: sparePSVs.filter(p => p.expire_date && new Date(p.expire_date) < currentDate).length
+        },
+        dueNextMonth: {
+          main: mainPSVs.filter(p => {
+            if (!p.expire_date) return false;
+            const expireDate = new Date(p.expire_date);
+            const oneMonthFromNow = new Date(currentDate);
+            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+            return expireDate <= oneMonthFromNow && expireDate >= currentDate;
+          }).length,
+          spare: sparePSVs.filter(p => {
+            if (!p.expire_date) return false;
+            const expireDate = new Date(p.expire_date);
+            const oneMonthFromNow = new Date(currentDate);
+            oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+            return expireDate <= oneMonthFromNow && expireDate >= currentDate;
+          }).length
+        },
+        neverCalibrated: {
+          main: mainPSVs.filter(p => !p.last_calibration_date).length,
+          spare: sparePSVs.filter(p => !p.last_calibration_date).length
+        },
+        rbiLevel: {
+          level1: 0,
+          level2: 0,
+          level3: 0,
+          level4: 0
+        }
+      };
+
+      setSummary(calculatedSummary);
+    }
+  }, [psvs]); // Only recalculate summary when psvs changes
 
   // Only show loading spinner on initial load, not during filter changes
   if (loading && psvs.length === 0) {

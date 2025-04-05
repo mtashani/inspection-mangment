@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import { PSVCalibrationDrawer } from "@/components/psv/psv-calibration-drawer";
+import { EditCalibrationDrawer } from "@/components/psv/edit-calibration-drawer";
 import { CalibrationCertificate } from "@/components/psv/calibration-certificate";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { format } from "date-fns";
-import { Loader2, Printer } from "lucide-react";
-import { fetchPSVById, fetchCalibrations } from '@/api/psv';
-import { PSV, Calibration, CalibrationStatus } from '@/components/psv/types';
+import { Loader2, Printer, Trash2 } from "lucide-react";
+import { fetchPSVById, fetchCalibrations, deleteCalibration } from '@/api/psv';
+import { PSV, Calibration, CalibrationStatus, RBILevel } from '@/components/psv/types';
 
 export default function PSVDetailsPage() {
   const params = useParams();
@@ -21,6 +23,24 @@ export default function PSVDetailsPage() {
   const [calibrationsLoading, setCalibrationsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [calibrationsError, setCalibrationsError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [calibrationToDelete, setCalibrationToDelete] = useState<Calibration | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [rbiLevel, setRbiLevel] = useState<RBILevel>(1);  // Default to level 1
+
+  // Add function to fetch RBI level
+  async function fetchRBILevel(tagNumber: string) {
+    try {
+      // Import the function from rbi.ts
+      const { getAppropriateRBILevel } = await import('@/api/rbi');
+      const level = await getAppropriateRBILevel(tagNumber);
+      setRbiLevel(level);
+    } catch (error) {
+      console.error("Failed to fetch RBI level:", error);
+      // Default to level 1 on error
+      setRbiLevel(1);
+    }
+  }
 
   useEffect(() => {
     async function loadCalibrations() {
@@ -30,6 +50,9 @@ export default function PSVDetailsPage() {
         setCalibrationsError(null);
         const data = await fetchCalibrations(psv.tag_number);
         setCalibrations(data);
+        
+        // Also fetch the RBI level
+        await fetchRBILevel(psv.tag_number);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load calibration history';
         console.error('Error loading calibrations:', err);
@@ -331,21 +354,48 @@ export default function PSVDetailsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Print Certificate"
-                        >
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <CalibrationCertificate psv={psv} calibration={cal} />
-                      </DialogContent>
-                    </Dialog>
+                    <div className="flex space-x-1">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Print Certificate"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <CalibrationCertificate psv={psv} calibration={cal} />
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <EditCalibrationDrawer
+                        psv={psv}
+                        calibration={cal}
+                        rbiLevel={rbiLevel}
+                        onCalibrationUpdated={(updatedCal) => {
+                          // Replace the calibration in the list with the updated one
+                          setCalibrations(calibrations.map(c =>
+                            c.id === updatedCal.id ? updatedCal : c
+                          ));
+                        }}
+                      />
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="Delete Calibration"
+                        onClick={() => {
+                          setCalibrationToDelete(cal);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -353,6 +403,36 @@ export default function PSVDetailsPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        setIsOpen={setDeleteDialogOpen}
+        title="Delete Calibration Record"
+        description="Are you sure you want to delete this calibration record? This action cannot be undone."
+        onConfirm={async () => {
+          try {
+            if (!calibrationToDelete) return;
+            
+            setIsDeleting(true);
+            // Call the API to delete the calibration
+            await deleteCalibration(calibrationToDelete.id);
+            
+            // Remove the deleted calibration from the list
+            setCalibrations(calibrations.filter(c => c.id !== calibrationToDelete.id));
+            
+            // Reset state
+            setCalibrationToDelete(null);
+          } catch (error) {
+            console.error('Error deleting calibration:', error);
+            throw error; // Rethrow to be handled by the dialog
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+        isDeleting={isDeleting}
+        confirmationText="delete"
+      />
     </div>
   );
 }

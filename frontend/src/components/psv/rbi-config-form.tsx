@@ -161,6 +161,10 @@ export function RBIConfigForm({ initialData, onSubmit }: RBIConfigFormProps) {
                         <FormDescription>
                           Enable this configuration for use
                         </FormDescription>
+                        <p className="text-xs text-amber-600 mt-1">
+                          Note: Only one RBI level configuration can be active at a time.
+                          Activating this will deactivate all others.
+                        </p>
                       </div>
                       <FormControl>
                         <Checkbox

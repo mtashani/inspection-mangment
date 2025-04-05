@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
@@ -37,9 +37,15 @@ def create_calibration(
     db.add(calibration)
     
     # Update PSV last calibration date and expiry date
-    psv.last_calibration_date = calibration.calibration_date
+    # Convert string dates to datetime objects if needed
+    if isinstance(calibration.calibration_date, str):
+        calibration_date = datetime.fromisoformat(calibration.calibration_date.replace('Z', '+00:00'))
+    else:
+        calibration_date = calibration.calibration_date
+        
+    psv.last_calibration_date = calibration_date
     # Calculate expiry date based on frequency (in months)
-    psv.expire_date = calibration.calibration_date + timedelta(days=psv.frequency * 30)
+    psv.expire_date = calibration_date + timedelta(days=psv.frequency * 30)
     
     try:
         db.commit()
@@ -69,3 +75,48 @@ def get_latest_calibration(
         raise HTTPException(status_code=404, detail="No calibration records found")
     
     return latest
+
+@router.put("/{id}", response_model=Calibration)
+def update_calibration(
+    id: int,
+    calibration_data: dict,
+    db: Session = Depends(get_session)
+):
+    """Update an existing calibration record"""
+    # Find the calibration by ID
+    calibration = db.get(Calibration, id)
+    if not calibration:
+        raise HTTPException(status_code=404, detail="Calibration record not found")
+    
+    # Update the calibration fields
+    for key, value in calibration_data.items():
+        if hasattr(calibration, key):
+            setattr(calibration, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(calibration)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    return calibration
+
+@router.delete("/{id}", status_code=204)
+def delete_calibration(
+    id: int,
+    db: Session = Depends(get_session)
+):
+    """Delete a calibration record"""
+    calibration = db.get(Calibration, id)
+    if not calibration:
+        raise HTTPException(status_code=404, detail="Calibration record not found")
+    
+    try:
+        db.delete(calibration)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    return None

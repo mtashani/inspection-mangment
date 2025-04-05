@@ -132,14 +132,15 @@ const columns: ColumnDef<PSV>[] = [
       const today = new Date();
       const daysUntilDue = Math.ceil((parsedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      
-      let className = "bg-yellow-50/30 px-2 py-1 rounded-md"; // Light yellow for normal
+      // Make colors more visible and prominent with stronger contrast
+      let className = "bg-emerald-200 text-emerald-800 px-2 py-1 rounded-md border border-emerald-300 font-medium"; // Stronger green
       
       if (daysUntilDue < 0) {
-        className = "bg-red-50 text-red-800 px-2 py-1 rounded-md"; // Red for expired
+        className = "bg-red-200 text-red-800 px-2 py-1 rounded-md border border-red-400 font-bold"; // Bolder red for expired
       } else if (daysUntilDue < 30) {
-        className = "bg-yellow-50 text-yellow-800 px-2 py-1 rounded-md"; // Yellow for due soon
+        className = "bg-amber-200 text-amber-800 px-2 py-1 rounded-md border border-amber-400 font-bold"; // Bolder amber for due soon
       }
+      
       return (
         <span className={className}>
           {parsedDate.toLocaleDateString("en-US", {

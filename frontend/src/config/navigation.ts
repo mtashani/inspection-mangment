@@ -1,9 +1,11 @@
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
-  Settings, 
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Settings,
   Database,
-  LineChart
+  LineChart,
+  Droplet,
+  LifeBuoy
 } from "lucide-react"
 
 export type NavItem = {
@@ -54,8 +56,52 @@ export const navigationConfig: NavItem[] = [
     ],
   },
   {
+    title: "Corrosion",
+    href: "/corrosion",
+    icon: Droplet,
+    children: [
+      {
+        title: "Dashboard",
+        href: "/corrosion",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Coupons",
+        href: "/corrosion/coupons",
+        icon: Database,
+      },
+      {
+        title: "Analysis",
+        href: "/corrosion/analysis",
+        icon: LineChart,
+      },
+    ],
+  },
+  {
     title: "Equipment",
     href: "/equipment",
     icon: Database,
+  },
+  {
+    title: "Cranes",
+    href: "/cranes/dashboard",
+    icon: LifeBuoy,
+    children: [
+      {
+        title: "Dashboard",
+        href: "/cranes/dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Crane List",
+        href: "/cranes",
+        icon: Database,
+      },
+      {
+        title: "Add New Crane",
+        href: "/cranes/new",
+        icon: Settings,
+      },
+    ],
   },
 ]
