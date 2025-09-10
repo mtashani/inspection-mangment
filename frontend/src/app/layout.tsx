@@ -1,52 +1,79 @@
-import type { Metadata } from "next"
-import { Vazirmatn } from "next/font/google"
-import "./globals.css"
-import { Sidebar } from "@/components/layout/sidebar/sidebar"
-import { MobileSidebar } from "@/components/layout/sidebar/mobile-sidebar"
-import { SidebarProvider } from "@/contexts/sidebar-context"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { Toaster } from "@/components/ui/toast"
+'use client';
 
-const vazirmatn = Vazirmatn({ subsets: ["arabic"] })
+import './globals.css';
+import { Inter } from 'next/font/google';
+import { InspectorsProvider } from '@/contexts/inspectors-context';
+import { NotificationsProvider } from '@/contexts/notifications-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { SpecialtyProvider } from '@/contexts/specialty-context';
+import { ThemeProvider } from '@/components/theme-provider'
+import { InspectionSidebar07 } from '@/components/layout/sidebar/inspection-sidebar-07';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { usePathname } from 'next/navigation';
+import { AuthGuard } from '@/components/auth/auth-guard';
 
-export const metadata: Metadata = {
-  title: "Inspection System",
-  description: "Inspection Management System",
+const inter = Inter({ subsets: ['latin'] });
+
+function MainLayout({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+  const pathname = usePathname();
+  
+  // Public routes that don't need authentication
+  const publicRoutes = ['/login'];
+  const isPublicRoute = publicRoutes.includes(pathname);
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If user is on public route (login), show without sidebar/navbar
+  if (isPublicRoute) {
+    return <div className="min-h-screen bg-background">{children}</div>;
+  }
+  
+  // For protected routes, show full layout with new sidebar
+  return (
+    <InspectionSidebar07>
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-background">
+        {children}
+      </div>
+    </InspectionSidebar07>
+  );
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr">
-      <body className={vazirmatn.className}>
-        <TooltipProvider>
-          <SidebarProvider>
-            <div className="flex min-h-screen">
-              {/* Desktop Sidebar */}
-              <div className="hidden md:block">
-                <Sidebar />
-              </div>
-
-              {/* Mobile Sidebar */}
-              <div className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
-                <MobileSidebar />
-                <h1 className="font-semibold">Inspection System</h1>
-              </div>
-
-              {/* Main Content */}
-              <main className="flex-1 md:ml-16">
-                <div className="container px-4 py-6 md:px-6 md:py-8">
-                  {children}
-                </div>
-              </main>
-            </div>
-          </SidebarProvider>
-        </TooltipProvider>
-        <Toaster />
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>
+            <NotificationsProvider>
+              <AuthProvider>
+                <AuthGuard>
+                  <SpecialtyProvider>
+                    <InspectorsProvider>
+                      <MainLayout>{children}</MainLayout>
+                    </InspectorsProvider>
+                  </SpecialtyProvider>
+                </AuthGuard>
+              </AuthProvider>
+            </NotificationsProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

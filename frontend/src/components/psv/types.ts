@@ -3,6 +3,69 @@ export type RBILevel = 1 | 2 | 3 | 4;
 // Define calibration status type
 export type CalibrationStatus = "OVERDUE" | "DUE_SOON" | "COMPLIANT" | "NEVER_CALIBRATED";
 
+// PSV Enums based on backend models
+export enum PSVStatus {
+  Main = "Main",
+  Spare = "Spare"
+}
+
+export enum PSVSeatType {
+  Metal = "metal",
+  Soft = "soft"
+}
+
+export enum TestMedium {
+  Nitrogen = "Nitrogen",
+  Air = "Air",
+  Steam = "Steam",
+  Water = "Water"
+}
+
+export enum WorkMaintenance {
+  Adjust = "Adjust",
+  Cleaning = "Cleaning",
+  Lapping = "Lapping"
+}
+
+export enum LeakageClass {
+  None = "None",
+  Minimal = "Minimal",
+  Low = "Low",
+  Moderate = "Moderate",
+  Excessive = "Excessive"
+}
+
+export enum EnvironmentType {
+  Clean = "Clean",
+  Normal = "Normal",
+  Dirty = "Dirty",
+  Corrosive = "Corrosive",
+  Highly_Corrosive = "Highly Corrosive"
+}
+
+export enum PSVActionType {
+  Conventional = "Conventional",
+  QuickOpening = "QuickOpening"
+}
+
+export enum PSVOperationMode {
+  SpringLoaded = "SpringLoaded",
+  PilotOperated = "PilotOperated",
+  PowerActuated = "PowerActuated",
+  TemperatureActuated = "TemperatureActuated",
+  Deadweight = "Deadweight"
+}
+
+export enum PSVReliefService {
+  PressureRelief = "PressureRelief",
+  VacuumRelief = "VacuumRelief"
+}
+
+export enum PSVBonnetType {
+  Open = "Open",
+  Closed = "Closed"
+}
+
 export interface RBIConfiguration {
   id: number;
   level: RBILevel;
@@ -39,32 +102,62 @@ export interface RBICalculationResult {
 }
 
 export interface PSV {
-  id: number;
-  tag_number: string;
+  tag_number: string; // Primary key in backend
   unique_no: string;
-  line_number?: string;
-  p_and_id?: string;
-  unit?: string;
-  train?: string;
-  status: string;
-  set_pressure: number;
-  manufacturer?: string;
-  serial_no?: string;
-  service?: string;
-  type?: string;
-  inlet_size?: string;
-  outlet_size?: string;
-  inlet_rating?: string;
-  outlet_rating?: string;
-  body_material?: string;
-  capacity?: number;
-  back_pressure?: number;
-  cdtp?: number;
-  nps?: string;
-  orifice_designation?: string;
+  status: PSVStatus;
+  frequency: number; // months
   last_calibration_date?: string;
   expire_date?: string;
+  unit?: string;
+  train?: string;
+
+  // Changed from type to type_no
+  type_no?: string;
+  
+  // New enum fields
+  action_type?: PSVActionType;
+  operation_mode?: PSVOperationMode;
+  relief_service?: PSVReliefService;
+  bonnet_type?: PSVBonnetType;
+  
+  // Fields with type changes (string -> number)
+  serial_no?: string;
+  set_pressure: number; // Barg
+  cdtp?: number; // Barg
+  back_pressure?: number; // Barg
+  
+  // Changed from string to number
+  nps?: number;
+  inlet_size?: number; // Size in inches
+  inlet_rating?: number; // Rating class
+  outlet_size?: number; // Size in inches
+  outlet_rating?: number; // Rating class
+  
+  // API 527 related fields
+  orifice_size?: number; // Size in inches
+  seat_type?: PSVSeatType;
+  body_material?: string;
+  trim_material?: string;
+  
+  // New fields for RBI Level 4
+  installation_date?: string;
+  operating_pressure?: number; // Barg
+  
+  // Optional fields
+  p_and_id?: string;
+  line_number?: string;
+  service?: string;
   data_sheet_no?: string;
+  manufacturer?: string;
+  
+  // Additional property fields
+  has_fire_case?: boolean;
+  is_boiler_psv?: boolean;
+  
+  // Vacuum PSV specific fields
+  negative_pressure?: number; // Barg
+  positive_pressure?: number; // Barg
+  
   created_at: string;
   updated_at: string;
 }
@@ -102,27 +195,37 @@ export interface Calibration {
   id: number;
   tag_number: string;
   calibration_date: string;
-  result?: string;
-  pop_pressure: number;
-  leak_test_pressure: number;
-  seat_tightness?: string;
-  body_condition?: string;
-  spring_condition?: string;
-  notes?: string;
-  attachments?: string[];
-  technician?: string;
-  created_at: string;
-  updated_at: string;
-  
-  // Fields used in the PSV detail page
-  work_no: string;
-  work_maintenance: string;
-  test_medium: string;
-  pre_repair_pop_test?: number;
-  post_repair_pop_test: number;
-  pre_repair_leak_test?: number;
-  post_repair_leak_test: number;
+  work_maintenance: WorkMaintenance;
+  change_parts?: string;
+  test_medium: TestMedium;
   inspector: string;
   test_operator: string;
+  general_condition?: string;
   approved_by: string;
+  work_no: string;
+  
+  // Level 2+ RBI fields - all optional now
+  pre_repair_pop_test?: number;
+  pre_repair_leak_test?: number;
+  post_repair_pop_test?: number;
+  post_repair_leak_test?: number;
+  
+  // Vacuum PSV specific fields
+  negative_pressure_test?: number;
+  positive_pressure_test?: number;
+  
+  // Level 3 Assessment Fields (1-5 scale)
+  body_condition_score?: number;
+  body_condition_notes?: string;
+  internal_parts_score?: number;
+  internal_parts_notes?: string;
+  seat_plug_condition_score?: number;
+  seat_plug_notes?: string;
+  
+  // New fields for improved RBI Level 4
+  repairs_required?: boolean;
+  repair_time?: number; // Hours
+  
+  created_at: string;
+  updated_at?: string;
 }

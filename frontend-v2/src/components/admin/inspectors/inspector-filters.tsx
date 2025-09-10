@@ -1,0 +1,275 @@
+'use client'
+
+import { useState } from 'react'
+import { Filter, X } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+
+import { InspectorFilters, InspectorType, SpecialtyCode } from '@/types/admin'
+
+interface InspectorFiltersComponentProps {
+  filters: InspectorFilters
+  onFiltersChange: (filters: InspectorFilters) => void
+}
+
+export function InspectorFiltersComponent({ filters, onFiltersChange }: InspectorFiltersComponentProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const inspectorTypes: { value: InspectorType; label: string }[] = [
+    { value: 'INTERNAL', label: 'Internal' },
+    { value: 'EXTERNAL', label: 'External' },
+    { value: 'CONTRACTOR', label: 'Contractor' },
+  ]
+
+  const specialties: { value: SpecialtyCode; label: string }[] = [
+    { value: 'PSV', label: 'PSV' },
+    { value: 'CRANE', label: 'Crane' },
+    { value: 'CORROSION', label: 'Corrosion' },
+  ]
+
+  const handleInspectorTypeChange = (type: InspectorType, checked: boolean) => {
+    const currentTypes = filters.inspectorType ? [filters.inspectorType] : []
+    const newTypes = checked 
+      ? [...currentTypes, type]
+      : currentTypes.filter(t => t !== type)
+    
+    onFiltersChange({
+      ...filters,
+      inspectorType: newTypes.length > 0 ? newTypes[0] : undefined // For now, single selection
+    })
+  }
+
+  const handleSpecialtyChange = (specialty: SpecialtyCode, checked: boolean) => {
+    const currentSpecialties = filters.specialties || []
+    const newSpecialties = checked
+      ? [...currentSpecialties, specialty]
+      : currentSpecialties.filter(s => s !== specialty)
+    
+    onFiltersChange({
+      ...filters,
+      specialties: newSpecialties.length > 0 ? newSpecialties : undefined
+    })
+  }
+
+  const handleStatusChange = (status: 'active' | 'canLogin', checked: boolean) => {
+    onFiltersChange({
+      ...filters,
+      [status]: checked ? true : undefined
+    })
+  }
+
+  const clearFilters = () => {
+    onFiltersChange({})
+  }
+
+  const getActiveFiltersCount = () => {
+    let count = 0
+    if (filters.inspectorType) count++
+    if (filters.specialties?.length) count++
+    if (filters.active !== undefined) count++
+    if (filters.canLogin !== undefined) count++
+    return count
+  }
+
+  const activeFiltersCount = getActiveFiltersCount()
+
+  return (
+    <div className="flex items-center gap-2">
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="relative">
+            <Filter className="h-4 w-4 mr-2" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <Badge 
+                variant="secondary" 
+                className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              >
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-80" align="end">
+          <div className="flex items-center justify-between p-2">
+            <DropdownMenuLabel className="p-0">Filter Inspectors</DropdownMenuLabel>
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-auto p-1 text-xs"
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
+          <DropdownMenuSeparator />
+          
+          {/* Inspector Type Filter */}
+          <div className="p-3">
+            <Label className="text-sm font-medium mb-2 block">Inspector Type</Label>
+            <div className="space-y-2">
+              {inspectorTypes.map((type) => (
+                <div key={type.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`type-${type.value}`}
+                    checked={filters.inspectorType === type.value}
+                    onCheckedChange={(checked) => 
+                      handleInspectorTypeChange(type.value, checked as boolean)
+                    }
+                  />
+                  <Label 
+                    htmlFor={`type-${type.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {type.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DropdownMenuSeparator />
+
+          {/* Specialties Filter */}
+          <div className="p-3">
+            <Label className="text-sm font-medium mb-2 block">Specialties</Label>
+            <div className="space-y-2">
+              {specialties.map((specialty) => (
+                <div key={specialty.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`specialty-${specialty.value}`}
+                    checked={filters.specialties?.includes(specialty.value) || false}
+                    onCheckedChange={(checked) => 
+                      handleSpecialtyChange(specialty.value, checked as boolean)
+                    }
+                  />
+                  <Label 
+                    htmlFor={`specialty-${specialty.value}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {specialty.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DropdownMenuSeparator />
+
+          {/* Status Filters */}
+          <div className="p-3">
+            <Label className="text-sm font-medium mb-2 block">Status</Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="active-filter"
+                  checked={filters.active === true}
+                  onCheckedChange={(checked) => 
+                    handleStatusChange('active', checked as boolean)
+                  }
+                />
+                <Label 
+                  htmlFor="active-filter"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Active Only
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="login-filter"
+                  checked={filters.canLogin === true}
+                  onCheckedChange={(checked) => 
+                    handleStatusChange('canLogin', checked as boolean)
+                  }
+                />
+                <Label 
+                  htmlFor="login-filter"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Can Login Only
+                </Label>
+              </div>
+            </div>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Active Filters Display */}
+      {activeFiltersCount > 0 && (
+        <div className="flex items-center gap-1 flex-wrap">
+          {filters.inspectorType && (
+            <Badge variant="secondary" className="text-xs">
+              Type: {filters.inspectorType}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
+                onClick={() => onFiltersChange({ ...filters, inspectorType: undefined })}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {filters.specialties?.map((specialty) => (
+            <Badge key={specialty} variant="secondary" className="text-xs">
+              {specialty}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
+                onClick={() => {
+                  const newSpecialties = filters.specialties?.filter(s => s !== specialty)
+                  onFiltersChange({ 
+                    ...filters, 
+                    specialties: newSpecialties?.length ? newSpecialties : undefined 
+                  })
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))}
+          {filters.active && (
+            <Badge variant="secondary" className="text-xs">
+              Active
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
+                onClick={() => onFiltersChange({ ...filters, active: undefined })}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {filters.canLogin && (
+            <Badge variant="secondary" className="text-xs">
+              Can Login
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
+                onClick={() => onFiltersChange({ ...filters, canLogin: undefined })}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

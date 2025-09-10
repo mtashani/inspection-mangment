@@ -182,8 +182,8 @@ const DailyReportsPage: FC = () => {
   return (
     <div className="container mx-auto py-10 space-y-8">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Daily Inspection Reports</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-base-content)]">Daily Inspection Reports</h1>
+        <p className="text-sm text-[var(--color-base-content)]/70">
           Track and manage equipment inspection reports and progress
         </p>
       </div>
@@ -198,38 +198,30 @@ const DailyReportsPage: FC = () => {
         <SummaryCard
           title="Active Inspections"
           count={stats.activeInspections}
-          className="bg-blue-500"
-          bgGradient="bg-gradient-to-br from-blue-500/2 via-blue-500/5 to-blue-500/10"
-          textColorClass="text-blue-500 dark:text-blue-400"
+          variant="info"
           icon={ClipboardList}
         />
         <SummaryCard
           title="Completed Inspections"
           count={stats.completedInspections}
-          className="bg-green-500"
-          bgGradient="bg-gradient-to-br from-green-500/2 via-green-500/5 to-green-500/10"
-          textColorClass="text-green-500 dark:text-green-400"
+          variant="success"
           icon={CheckCircle}
         />
         <SummaryCard
           title="Reports This Month"
           count={stats.reportsThisMonth}
-          className="bg-primary"
-          bgGradient="bg-gradient-to-br from-primary/2 via-primary/5 to-primary/10"
-          textColorClass="text-primary dark:text-primary"
+          variant="primary"
           icon={Clock}
         />
         <SummaryCard
           title="Active Inspectors"
           count={stats.activeInspectors}
-          className="bg-yellow-500"
-          bgGradient="bg-gradient-to-br from-yellow-500/2 via-yellow-500/5 to-yellow-500/10"
-          textColorClass="text-yellow-500 dark:text-yellow-400"
+          variant="warning"
           icon={Users}
         />
       </div>
 
-      <Card className="p-6">
+      <Card variant="default" className="p-6">
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">

@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "name": "Theme System Error Fixer",
+  "description": "Monitors theme system files for errors and automatically fixes common issues like incorrect CSS variable usage, missing shadcn/ui imports, hardcoded colors, and improper component patterns while preserving performance optimizations",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "frontend/src/components/**/*.tsx",
+      "frontend/src/app/**/*.tsx",
+      "frontend/src/design-system/**/*.tsx",
+      "frontend/src/design-system/**/*.ts",
+      "frontend/src/lib/**/*.ts",
+      "frontend/src/hooks/**/*.ts",
+      "frontend/src/types/**/*.ts",
+      "frontend/src/**/*.css"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Search through the modified files and identify any errors related to the advanced theme system implementation. Look for:\n\n1. **CSS Variable Issues**: Incorrect usage of old variables (--primary, --foreground) instead of enhanced variables (--color-primary, --color-primary-content)\n2. **Component Pattern Violations**: Custom components not using shadcn/ui as base, hardcoded colors/styles\n3. **Radius Usage Errors**: Wrong radius variables for component types (should use --radius-box for cards, --radius-field for buttons/inputs, --radius-selector for badges)\n4. **Import Errors**: Missing or incorrect shadcn/ui component imports\n5. **TypeScript Errors**: Type issues, missing interfaces, improper type usage\n6. **Theme Provider Issues**: Incorrect theme provider setup or usage\n7. **Performance Issues**: Inefficient theme variable usage, unnecessary re-renders\n\nFor each error found:\n- Explain the specific issue and why it's problematic\n- Provide the corrected code following enhanced-theme-system guidelines\n- Ensure the fix maintains or improves performance\n- Verify the solution follows shadcn/ui patterns and enhanced CSS variable naming\n\nFocus on files that were created or modified as part of the advanced-theme-system implementation. Prioritize fixes that prevent breaking changes and maintain design system consistency."
+  }
+}

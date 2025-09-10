@@ -1,0 +1,13 @@
+// Payroll Management Components
+export { PayrollDashboard } from './payroll-dashboard'
+export { PayrollStatsCards } from './payroll-stats-cards'
+export { PayrollCalendar } from './payroll-calendar'
+export { PayrollReports } from './payroll-reports'
+export { PayrollAnalytics } from './payroll-analytics'
+export { PayrollExport } from './payroll-export'
+export { SalaryCalculator } from './salary-calculator'
+export { PayrollRulesManager } from './payroll-rules-manager'
+export { PayrollSlipGenerator } from './payroll-slip-generator'
+export { PayrollApprovalWorkflow } from './payroll-approval-workflow'
+export { PayrollAuditLog } from './payroll-audit-log'
+export { InspectorPayrollDetails } from './inspector-payroll-details'

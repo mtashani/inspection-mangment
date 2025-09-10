@@ -46,15 +46,15 @@ const getStatusDisplay = (status: InspectionStatus): string => {
 const getStatusStyles = (status: InspectionStatus) => {
   const styles = {
     background: status === 'IN_PROGRESS' 
-      ? 'bg-gradient-to-br from-blue-500/2 via-blue-500/5 to-blue-500/10'
-      : 'bg-gradient-to-br from-green-500/2 via-green-500/5 to-green-500/10',
+      ? 'bg-gradient-to-br from-[var(--color-info)]/5 via-[var(--color-info)]/10 to-[var(--color-info)]/15'
+      : 'bg-gradient-to-br from-[var(--color-success)]/5 via-[var(--color-success)]/10 to-[var(--color-success)]/15',
     badge: status === 'IN_PROGRESS'
-      ? 'bg-blue-100 text-blue-800'
-      : 'bg-green-100 text-green-800',
+      ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]'
+      : 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
     icon: status === 'IN_PROGRESS' ? Timer : ClipboardCheck,
     shadow: status === 'IN_PROGRESS' 
-      ? 'shadow-blue-500/10'
-      : 'shadow-green-500/10'
+      ? 'shadow-[var(--color-info)]/10'
+      : 'shadow-[var(--color-success)]/10'
   }
   return styles
 }
@@ -135,13 +135,14 @@ export const InspectionGroupCard = ({
   return (
     <Card 
       ref={cardRef}
+      variant="elevated"
       className={cn(
         "backdrop-blur-sm transition-all duration-300",
         "hover:-translate-y-0.5 relative overflow-visible",
         statusStyles.background,
         statusStyles.shadow,
-        isExpanded && "shadow-lg",
-        !isExpanded && "hover:shadow-md shadow-sm"
+        isExpanded && "shadow-[calc(var(--depth)*2)]",
+        !isExpanded && "hover:shadow-[calc(var(--depth)*1.5)] shadow-[var(--depth)]"
       )}
     >
       <div

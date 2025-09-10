@@ -5,7 +5,9 @@ import {
   Database,
   LineChart,
   Droplet,
-  LifeBuoy
+  LifeBuoy,
+  BarChart3,
+  Bell
 } from "lucide-react"
 
 export type NavItem = {
@@ -20,6 +22,11 @@ export const navigationConfig: NavItem[] = [
     title: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Notifications",
+    href: "/notifications",
+    icon: Bell,
   },
   {
     title: "Daily Reports",
@@ -47,6 +54,11 @@ export const navigationConfig: NavItem[] = [
         title: "PSV List",
         href: "/psv",
         icon: Database,
+      },
+      {
+        title: "Analytics Dashboard",
+        href: "/psv-dashboard",
+        icon: BarChart3,
       },
       {
         title: "PSV Analytics",

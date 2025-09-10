@@ -1,7 +1,7 @@
 import { DailyReport, InspectionGroup, NewInspectionFormValues, ReportFormValues, InspectionStatus } from "@/components/daily-reports/types"
 
-const API_BASE = '/api/daily-reports'
-const INSPECTIONS_BASE = '/api/inspections'
+const API_BASE = 'http://localhost:8000/api/v1/daily-reports'
+const INSPECTIONS_BASE = 'http://localhost:8000/api/v1/inspections'
 
 interface BackendInspector {
   id: number

@@ -74,13 +74,26 @@ const FormItemContext = React.createContext<FormItemContextValue>(
 
 const FormItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    spacing?: 'sm' | 'md' | 'lg'
+  }
+>(({ className, spacing = 'md', ...props }, ref) => {
   const id = React.useId()
+  
+  const spacingStyles = {
+    sm: { gap: 'var(--space-1)' },
+    md: { gap: 'var(--space-2)' }, 
+    lg: { gap: 'var(--space-3)' }
+  }
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+      <div 
+        ref={ref} 
+        className={cn('flex flex-col', className)}
+        style={spacingStyles[spacing]}
+        {...props} 
+      />
     </FormItemContext.Provider>
   )
 })
@@ -88,17 +101,37 @@ FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+    required?: boolean
+    size?: 'sm' | 'md' | 'lg'
+  }
+>(({ className, required = false, size = 'md', children, ...props }, ref) => {
   const { error, formItemId } = useFormField()
+  
+  const sizeStyles = {
+    sm: { fontSize: 'var(--font-size-xs)' },
+    md: { fontSize: 'var(--font-size-sm)' },
+    lg: { fontSize: 'var(--font-size-base)' }
+  }
 
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-destructive", className)}
+      className={cn('font-medium', className)}
+      style={{
+        ...sizeStyles[size],
+        color: error ? 'var(--color-error)' : undefined
+      }}
       htmlFor={formItemId}
       {...props}
-    />
+    >
+      {children}
+      {required && (
+        <span className="text-[var(--color-error)] ml-1" aria-label="required">
+          *
+        </span>
+      )}
+    </Label>
   )
 })
 FormLabel.displayName = "FormLabel"
@@ -135,7 +168,11 @@ const FormDescription = React.forwardRef<
     <p
       ref={ref}
       id={formDescriptionId}
-      className={cn("text-[0.8rem] text-muted-foreground", className)}
+      className={className}
+      style={{
+        fontSize: 'var(--font-size-sm)',
+        color: 'var(--muted-foreground)'
+      }}
       {...props}
     />
   )
@@ -144,20 +181,32 @@ FormDescription.displayName = "FormDescription"
 
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
+  React.HTMLAttributes<HTMLParagraphElement> & {
+    variant?: 'error' | 'warning' | 'info'
+  }
+>(({ className, children, variant = 'error', ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message) : children
 
   if (!body) {
     return null
   }
+  
+  const variantStyles = {
+    error: { color: 'var(--color-error)' },
+    warning: { color: 'var(--color-warning)' },
+    info: { color: 'var(--color-info)' }
+  }
 
   return (
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-[0.8rem] font-medium text-destructive", className)}
+      className={cn('font-medium', className)}
+      style={{
+        fontSize: 'var(--font-size-sm)',
+        ...(error ? variantStyles.error : variantStyles[variant])
+      }}
       {...props}
     >
       {body}

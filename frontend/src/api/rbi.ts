@@ -1,54 +1,42 @@
-import { RBIConfiguration, RBICalculationResult, RBILevel } from "@/components/psv/types";
+import { RBIConfiguration, RBICalculationResult, RBILevel, Calibration, PSV } from "@/components/psv/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Get active RBI configuration
 export async function getActiveRBIConfiguration(): Promise<RBIConfiguration | null> {
   try {
-    const response = await fetch(`${API_URL}/api/psv/rbi/config/active`);
+    // First try to get active configuration directly (for each level)
+    const allConfigsResponse = await fetch(`${API_URL}/api/psv/rbi/config?active_only=true`);
     
-    // Endpoint doesn't exist yet - try getting all configs and find the active one
-    if (!response.ok) {
-      console.warn("Active RBI config endpoint not available, trying all configs");
-      const allConfigsResponse = await fetch(`${API_URL}/api/psv/rbi/config`);
-      
-      if (!allConfigsResponse.ok) {
-        console.error("Failed to fetch any RBI configurations");
-        return null;
-      }
-      
-      const allConfigs = await allConfigsResponse.json();
-      if (Array.isArray(allConfigs) && allConfigs.length > 0) {
-        // Try to find an active config
-        const activeConfig = allConfigs.find(config => config.active);
-        if (activeConfig) {
-          return activeConfig;
-        }
-        // If no active config, return the first one as fallback
-        console.warn("No active RBI configuration found, using first available");
-        return allConfigs[0];
-      }
-      
-      // No configs available
+    if (!allConfigsResponse.ok) {
+      console.error("Failed to fetch active RBI configurations");
       return null;
     }
     
-    const configs = await response.json();
+    const activeConfigs = await allConfigsResponse.json();
+    if (Array.isArray(activeConfigs) && activeConfigs.length > 0) {
+      // Return the highest level active configuration
+      return activeConfigs.reduce((highest, current) => 
+        current.level > highest.level ? current : highest
+      , activeConfigs[0]);
+    }
     
-    // If an array of configs is returned, find the first active one
-    if (Array.isArray(configs)) {
-      const activeConfig = configs.find(config => config.active);
-      if (activeConfig) {
-        return activeConfig;
-      }
-      if (configs.length > 0) {
-        return configs[0]; // Fallback to first config if none are active
-      }
+    // If no active configs found, try to get any config
+    console.warn("No active RBI configuration found, looking for any configuration");
+    const anyConfigsResponse = await fetch(`${API_URL}/api/psv/rbi/config`);
+    
+    if (!anyConfigsResponse.ok) {
+      console.error("Failed to fetch any RBI configurations");
       return null;
     }
     
-    // If a single config is returned directly
-    return configs;
+    const anyConfigs = await anyConfigsResponse.json();
+    if (Array.isArray(anyConfigs) && anyConfigs.length > 0) {
+      console.warn("Using first available RBI configuration as fallback");
+      return anyConfigs[0];
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error getting active RBI configuration:", error);
     return null;
@@ -58,119 +46,122 @@ export async function getActiveRBIConfiguration(): Promise<RBIConfiguration | nu
 // Calculate RBI for a PSV with specified level
 export async function calculateRBI(tagNumber: string, level: number): Promise<RBICalculationResult> {
   try {
-    // Skip API call entirely for now - always use mock data for demonstration
-    console.warn("Using mock RBI calculation data while backend endpoint is being developed");
-    return getMockRBICalculationResult(tagNumber, level);
-    
-    /* Commenting out real API call until backend is fixed
     const encodedTag = encodeURIComponent(tagNumber);
     
-    // Check if endpoint exists
+    // Call real API endpoint 
     const response = await fetch(`${API_URL}/api/psv/rbi/${encodedTag}/calculate?level=${level}`, {
       method: "POST",
     });
 
     if (!response.ok) {
-      // If endpoint doesn't exist or returns error, return mock data for demonstration
-      console.warn(`RBI calculation endpoint returned ${response.status}, using mock data`);
-      return getMockRBICalculationResult(tagNumber, level);
+      // If endpoint returns error, throw an error with details
+      const errorText = await response.text();
+      throw new Error(`RBI calculation failed: ${response.status} ${errorText}`);
     }
 
-    return response.json();
-    */
+    const result = await response.json();
+    return result as RBICalculationResult;
   } catch (error) {
     console.error(`Error calculating RBI for ${tagNumber}:`, error);
-    // Always fallback to mock data if there's an error
-    return getMockRBICalculationResult(tagNumber, level);
+    // Rethrow for proper error handling
+    throw new Error(`Failed to calculate RBI: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-// Mock RBI calculation result for demonstration purposes - TEMPORARY SOLUTION
-// This function generates realistic mock data while the backend endpoint is being developed
-// It should be removed once the actual API is working correctly
-function getMockRBICalculationResult(tagNumber: string, level: number): RBICalculationResult {
-  const now = new Date();
-  const monthsToAdd = level * 12; // Higher level means longer interval
-  const nextDate = new Date(now);
-  nextDate.setMonth(now.getMonth() + monthsToAdd);
-  
-  return {
-    tag_number: tagNumber,
-    recommended_interval: monthsToAdd,
-    next_calibration_date: nextDate.toISOString(),
-    risk_score: 100 - (level * 15), // Higher level means lower risk
-    risk_category: level === 1 ? "High" : level === 2 ? "Medium" : "Low",
-    details: {
-      "Service Factor": 1.2,
-      "Age Factor": 0.8,
-      "Maintenance History": 0.9,
-      "Environmental Factor": 1.1,
-      "Pressure Rating": 1.0
-    },
-    rbi_level: level as RBILevel,
-    current_risk_score: 100 - (level * 20)
-  };
-}
-
-// Get the appropriate RBI level for a specific PSV based on active configuration and calculation
+// Get the appropriate RBI level for a specific PSV based on active configuration
 export async function getAppropriateRBILevel(psvTagNumber: string): Promise<RBILevel> {
   try {
     // First get the active RBI configuration
     const activeConfig = await getActiveRBIConfiguration();
     
     if (!activeConfig) {
-      console.warn("No active RBI configuration found, defaulting to level 1");
+      console.warn(`No active RBI configuration found for PSV ${psvTagNumber}, defaulting to level 1`);
       return 1; // Default to level 1 if no config
     }
     
-    // Use the active configuration's level to calculate RBI
-    const calculationResult = await calculateRBI(psvTagNumber, activeConfig.level);
+    // Optionally, we could call the calculate endpoint to get a PSV-specific recommended level
+    // const calculationResult = await calculateRBI(psvTagNumber, activeConfig.level);
+    // return calculationResult.rbi_level || activeConfig.level;
     
-    // The calculation result includes the recommended RBI level for this PSV
-    return calculationResult.rbi_level || 1;
+    return activeConfig.level;
   } catch (error) {
-    console.error("Error determining appropriate RBI level:", error);
+    console.error(`Error determining appropriate RBI level for ${psvTagNumber}:`, error);
     return 1; // Default to level 1 on error
   }
 }
 
-// Existing RBI-related functions can be kept here
-export async function fetchRBIConfigurations() {
+// Calculate and update next calibration date after a new calibration is saved
+export async function calculateNextCalibrationDate(tagNumber: string, calibration: Calibration): Promise<Date | null> {
+  try {
+    // Get active RBI configuration
+    const activeConfig = await getActiveRBIConfiguration();
+    if (!activeConfig) {
+      console.warn(`No active RBI configuration found for ${tagNumber}, cannot calculate next calibration date`);
+      return null;
+    }
+    
+    // We can use calibration data to inform the calculation if needed
+    console.log(`Using calibration data from ${calibration.calibration_date} to calculate next date for ${tagNumber}`);
+    
+    // Calculate RBI with the active configuration's level
+    const calculationResult = await calculateRBI(tagNumber, activeConfig.level);
+    
+    // Return the next calibration date
+    if (calculationResult.next_calibration_date) {
+      return new Date(calculationResult.next_calibration_date);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error calculating next calibration date for ${tagNumber}:`, error);
+    return null;
+  }
+}
+
+// Recalculate all PSV calibration dates when RBI configuration changes
+export async function recalculateAllCalibrationDates(psvList: PSV[]): Promise<Map<string, Date | null>> {
+  const results = new Map<string, Date | null>();
+  const activeConfig = await getActiveRBIConfiguration();
+  
+  if (!activeConfig) {
+    console.warn("No active RBI configuration found, cannot recalculate calibration dates");
+    return results;
+  }
+  
+  for (const psv of psvList) {
+    try {
+      const calculationResult = await calculateRBI(psv.tag_number, activeConfig.level);
+      if (calculationResult.next_calibration_date) {
+        results.set(psv.tag_number, new Date(calculationResult.next_calibration_date));
+      } else {
+        results.set(psv.tag_number, null);
+      }
+    } catch (error) {
+      console.error(`Error recalculating calibration date for ${psv.tag_number}:`, error);
+      results.set(psv.tag_number, null);
+    }
+  }
+  
+  return results;
+}
+
+// Fetch RBI configurations
+export async function fetchRBIConfigurations(): Promise<RBIConfiguration[]> {
   try {
     const response = await fetch(`${API_URL}/api/psv/rbi/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch RBI configurations');
     }
-    return response.json();
+    return await response.json();
   } catch (error) {
     console.error('Error fetching RBI configurations:', error);
     throw error;
   }
 }
 
+// Create new RBI configuration
 export async function createRBIConfiguration(data: Omit<RBIConfiguration, 'id' | 'created_at' | 'updated_at'>) {
   try {
-    // If creating an active configuration, deactivate all others first
-    if (data.active === true) {
-      console.log("Creating active configuration, deactivating others...");
-      // Get all configurations
-      const allConfigs = await fetchRBIConfigurations();
-      
-      // Deactivate each active config
-      for (const config of allConfigs) {
-        if (config.active) {
-          console.log(`Deactivating configuration: ${config.name} (ID: ${config.id})`);
-          await fetch(`${API_URL}/api/psv/rbi/config/${config.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ active: false }),
-          });
-        }
-      }
-    }
-
     const response = await fetch(`${API_URL}/api/psv/rbi/config`, {
       method: 'POST',
       headers: {
@@ -191,30 +182,9 @@ export async function createRBIConfiguration(data: Omit<RBIConfiguration, 'id' |
   }
 }
 
+// Update existing RBI configuration
 export async function updateRBIConfiguration(id: number, data: Partial<Omit<RBIConfiguration, 'id' | 'created_at' | 'updated_at'>>) {
   try {
-    // If activating this configuration, first deactivate all others
-    if (data.active === true) {
-      console.log("Activating configuration, deactivating others...");
-      // Get all configurations
-      const allConfigs = await fetchRBIConfigurations();
-      
-      // Deactivate each active config except the one being updated
-      for (const config of allConfigs) {
-        if (config.id !== id && config.active) {
-          console.log(`Deactivating configuration: ${config.name} (ID: ${config.id})`);
-          await fetch(`${API_URL}/api/psv/rbi/config/${config.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ active: false }),
-          });
-        }
-      }
-    }
-
-    // Update the target configuration
     const response = await fetch(`${API_URL}/api/psv/rbi/config/${id}`, {
       method: 'PUT',
       headers: {
@@ -233,4 +203,42 @@ export async function updateRBIConfiguration(id: number, data: Partial<Omit<RBIC
     console.error('Error updating RBI configuration:', error);
     throw error;
   }
+}
+
+// Preview changes - calculate what calibration schedules would be with new RBI settings
+export async function previewRBIChanges(psvTagNumbers: string[], configData: Omit<RBIConfiguration, 'id' | 'created_at' | 'updated_at'>): Promise<{ [key: string]: { current: Date | null, new: Date | null } }> {
+  const results: { [key: string]: { current: Date | null, new: Date | null } } = {};
+  
+  // Get current dates
+  for (const tagNumber of psvTagNumbers) {
+    try {
+      // Get current active config level
+      const activeConfig = await getActiveRBIConfiguration();
+      if (!activeConfig) {
+        results[tagNumber] = { current: null, new: null };
+        continue;
+      }
+      
+      // Calculate with current config
+      const currentResult = await calculateRBI(tagNumber, activeConfig.level);
+      const currentDate = currentResult.next_calibration_date ? new Date(currentResult.next_calibration_date) : null;
+      
+      // We'll fake the new config response by providing mock data
+      // In a real implementation, we could temporarily send the new config to backend for calculation
+      const mockNextDate = new Date();
+      // Fix the possibly undefined error with nullish coalescing
+      const fixedInterval = configData.settings?.fixed_interval ?? 24;
+      mockNextDate.setMonth(mockNextDate.getMonth() + fixedInterval);
+      
+      results[tagNumber] = {
+        current: currentDate,
+        new: mockNextDate
+      };
+    } catch (error) {
+      console.error(`Error previewing RBI changes for ${tagNumber}:`, error);
+      results[tagNumber] = { current: null, new: null };
+    }
+  }
+  
+  return results;
 }

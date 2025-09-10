@@ -1,115 +1,78 @@
-# Industrial Equipment Inspection Management Backend
+# Inspection Management System - Backend
 
-This is the backend API for the Industrial Equipment Inspection Management system, built with FastAPI and PostgreSQL.
+## Overview
+This is the backend service for the Inspection Management System. It provides APIs for managing equipment inspections, PSV calibration tracking, corrosion monitoring, and crane management.
 
-## Features
+## Recent Fixes
 
-- Equipment management with risk assessment based on API 581
-- Inspection tracking and scheduling
-- Daily reports with multiple inspector support
-- Risk calculation for inspection intervals
-- PostgreSQL database with SQLModel ORM
-- Alembic migrations for database versioning
+### Import Error Fixed (April 28, 2025)
+- Fixed an issue with `get_risk_category` function being imported but not defined
+- The problem affected `analytics_routes.py` which was importing this missing function
+- Updated the import statements to remove the reference to the non-existent function
+- Made the application more resilient to import errors with proper error handling and logging
 
-## Prerequisites
+### Database Reset and Seeding (April 20, 2025)
+- Added reliable database reset functionality with `reset_db.py`
+- Created seed scripts for PSV data
+- Added comprehensive fix and verification utilities
 
-- Python 3.8+
-- PostgreSQL 12+
-- Poetry (recommended) or pip
+## Setup and Running
 
-## Setup
-
+### Environment Setup
 1. Create a virtual environment:
-```bash
+```
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-2. Install dependencies:
-```bash
+2. Activate the virtual environment:
+- Windows: `venv\Scripts\activate`
+- Linux/Mac: `source venv/bin/activate`
+
+3. Install dependencies:
+```
 pip install -r requirements.txt
 ```
 
-3. Create a PostgreSQL database:
-```sql
-CREATE DATABASE inspection_db;
+4. Set up your `.env` file (copy from `.env.example`)
+
+### Database Setup
+1. Reset the database:
+```
+python reset_db.py
 ```
 
-4. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your database credentials and other settings
+2. Seed the database with initial data:
+```
+python reset_and_seed_all.py
 ```
 
-5. Run database migrations:
-```bash
-alembic upgrade head
+### Running the Application
+Start the server with:
 ```
-
-## Running the Application
-
-Development mode:
-```bash
 uvicorn app.main:app --reload
 ```
 
-Production mode:
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+The API will be available at http://127.0.0.1:8000
 
 ## API Documentation
+Once the server is running, documentation is available at:
+- Swagger UI: http://127.0.0.1:8000/docs
+- ReDoc: http://127.0.0.1:8000/redoc
 
-Once the application is running, you can access:
-- Swagger UI documentation: http://localhost:8000/docs
-- ReDoc documentation: http://localhost:8000/redoc
+## Troubleshooting
 
-## Project Structure
-
+### Import Errors
+If you encounter import errors related to circular imports or missing functions:
+1. Check if all dependencies are installed
+2. Make sure your virtual environment is activated
+3. If errors persist, run:
 ```
-backend/
-├── alembic/                 # Database migrations
-│   ├── versions/           # Migration versions
-│   └── env.py             # Alembic environment configuration
-├── app/
-│   ├── routers/           # API route handlers
-│   │   ├── equipment.py   # Equipment management endpoints
-│   │   ├── inspections.py # Inspection management endpoints
-│   │   ├── daily_reports.py # Daily report endpoints
-│   │   └── inspectors.py  # Inspector management endpoints
-│   ├── models.py          # SQLModel database models
-│   ├── database.py        # Database configuration
-│   └── main.py           # FastAPI application setup
-├── requirements.txt       # Project dependencies
-├── alembic.ini           # Alembic configuration
-└── .env.example          # Example environment variables
+python fix_imports_simple.py
 ```
 
-## API Endpoints
-
-### Equipment
-- `GET /api/equipment` - List equipment with filters
-- `POST /api/equipment` - Create new equipment
-- `GET /api/equipment/{id}` - Get equipment details
-- `PUT /api/equipment/{id}` - Update equipment
-- `DELETE /api/equipment/{id}` - Delete equipment
-
-### Inspections
-- `GET /api/inspections` - List inspections
-- `POST /api/inspections` - Create new inspection
-- `GET /api/inspections/{id}` - Get inspection details
-- `PUT /api/inspections/{id}` - Update inspection
-- `POST /api/inspections/{id}/daily-reports` - Add daily report
-- `GET /api/inspections/{id}/daily-reports` - List daily reports
-
-### Daily Reports
-- `GET /api/daily-reports/{id}` - Get daily report
-- `PUT /api/daily-reports/{id}` - Update daily report
-- `DELETE /api/daily-reports/{id}` - Delete daily report
-
-### Inspectors
-- `GET /api/inspectors` - List inspectors
-- `POST /api/inspectors` - Create new inspector
-- `GET /api/inspectors/{id}` - Get inspector details
-- `PUT /api/inspectors/{id}` - Update inspector
-- `DELETE /api/inspectors/{id}` - Delete inspector
+### Database Errors
+If you have database connection or schema issues:
+1. Verify that your PostgreSQL server is running
+2. Check your `.env` configuration 
+3. Reset the database using `python reset_db.py`
+4. Verify the schema using `python verify_db.py`

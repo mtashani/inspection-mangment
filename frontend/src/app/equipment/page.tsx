@@ -189,7 +189,18 @@ const EquipmentPage: FC = () => {
     },
     {
       id: "actions",
-      cell: () => <Button variant="outline" size="sm">Inspect</Button>
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.href = `/equipment/${row.original.id}`}
+          >
+            View Details
+          </Button>
+          <Button variant="outline" size="sm">Inspect</Button>
+        </div>
+      )
     }
   ]
 

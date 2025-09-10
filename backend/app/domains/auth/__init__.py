@@ -1,0 +1,1 @@
+# Make domains.auth a package

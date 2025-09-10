@@ -72,8 +72,8 @@ function Calendar({
           pointerEvents: "none"
         },
         highlight: {
-          backgroundColor: "var(--primary)",
-          color: "var(--primary-foreground)"
+          backgroundColor: "var(--color-primary)",
+          color: "var(--color-primary-content)"
         }
       }}
       {...props}

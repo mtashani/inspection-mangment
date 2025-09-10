@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  frontend-v2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./.env.local:/app/.env.local:ro
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - inspection-network
+
+  # This assumes backend service exists
+  backend:
+    image: backend:latest
+    ports:
+      - "8000:8000"
+    networks:
+      - inspection-network
+
+networks:
+  inspection-network:
+    driver: bridge

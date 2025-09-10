@@ -34,14 +34,15 @@ export const ReportCard = ({
   
   return (
     <Card
+      variant="elevated"
       className={cn(
         "flex-1 group relative overflow-hidden",
         "transition-all duration-300",
-        "hover:shadow-md",
-        isHighlighted && "ring-1 ring-primary/20",
-        inspectionStatus === 'COMPLETED' ? "bg-gradient-to-br from-green-500/2 via-green-500/5 to-green-500/10" :
-        isDateHighlighted ? "bg-gradient-to-br from-primary/5 via-primary/10 to-primary/20 shadow-primary/10" :
-        "bg-gradient-to-br from-gray-500/2 via-gray-500/5 to-gray-500/10"
+        "hover:shadow-[calc(var(--depth)*2)]",
+        isHighlighted && "ring-1 ring-[var(--color-primary)]/20",
+        inspectionStatus === 'COMPLETED' ? "bg-gradient-to-br from-[var(--color-success)]/5 via-[var(--color-success)]/10 to-[var(--color-success)]/15" :
+        isDateHighlighted ? "bg-gradient-to-br from-[var(--color-primary)]/5 via-[var(--color-primary)]/10 to-[var(--color-primary)]/20 shadow-[var(--color-primary)]/10" :
+        "bg-gradient-to-br from-[var(--color-base-300)]/20 via-[var(--color-base-300)]/30 to-[var(--color-base-300)]/40"
       )}
     >
       <div className="p-4 space-y-2">
@@ -49,17 +50,17 @@ export const ReportCard = ({
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-sm font-medium",
-              isDateHighlighted && "text-primary"
+              isDateHighlighted ? "text-[var(--color-primary)]" : "text-[var(--color-base-content)]"
             )}>
               {format(new Date(report.date), "MMM d, yyyy")}
             </span>
             {isHighlighted && (
-              <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+              <span className="px-1.5 py-0.5 rounded-[var(--radius-selector)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs">
                 Selected Inspector
               </span>
             )}
             {isDateHighlighted && (
-              <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+              <span className="px-1.5 py-0.5 rounded-[var(--radius-selector)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs">
                 In Range
               </span>
             )}
@@ -86,10 +87,10 @@ export const ReportCard = ({
                 <span
                   key={inspectorId}
                   className={cn(
-                    "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+                    "inline-flex items-center px-2 py-0.5 rounded-[var(--radius-selector)] text-xs font-medium",
                     selectedInspector === inspectorId
-                      ? "bg-primary/15 text-primary"
-                      : "bg-secondary text-secondary-foreground"
+                      ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)]"
+                      : "bg-[var(--color-secondary)] text-[var(--color-secondary-content)]"
                   )}
                 >
                   {getInspectorName(inspectorId)}
@@ -99,18 +100,18 @@ export const ReportCard = ({
           )}
 
           {report.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="text-sm text-[var(--color-base-content)]/70 line-clamp-2">
               {report.description}
             </p>
           )}
         </div>
       </div>
 
-      {/* Gradient overlay */}
+      {/* Enhanced gradient overlay */}
       <div className="absolute inset-0 pointer-events-none">
         <div className={cn(
-          "absolute inset-0 opacity-[0.08] mix-blend-multiply dark:mix-blend-soft-light",
-          "bg-gradient-to-br from-transparent via-background/5 to-background/10"
+          "absolute inset-0 opacity-[0.08] mix-blend-multiply",
+          "bg-gradient-to-br from-transparent via-[var(--color-base-content)]/5 to-[var(--color-base-content)]/10"
         )} />
       </div>
     </Card>
