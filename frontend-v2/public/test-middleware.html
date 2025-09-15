@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Middleware Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 Middleware Debug Test</h2>
+        <div class="info">
+            <strong>Purpose:</strong> Test middleware execution by making direct requests to admin routes and checking headers/responses.
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testAdminRoute()">🛡️ Test Admin Route</button>
+            <button onclick="testAdminRouteWithAuth()">🔐 Test Admin Route (With Auth)</button>
+            <button onclick="testRegularRoute()">📄 Test Regular Route</button>
+            <button onclick="checkTokens()">🔑 Check Current Tokens</button>
+        </div>
+        
+        <div id="results" class="results">Ready to test...\n</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const resultsDiv = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            resultsDiv.textContent += `[${timestamp}] ${message}\n`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function testAdminRoute() {
+            log('🛡️ Testing admin route without auth headers...');
+            
+            try {
+                const response = await fetch('/admin', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    },
+                    redirect: 'manual' // Don't follow redirects so we can see what happens
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`);
+                log(`Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+                
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('Location');
+                    log(`Redirect to: ${location}`);
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        async function testAdminRouteWithAuth() {
+            log('🔐 Testing admin route with auth headers...');
+            
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                log('❌ No token found in localStorage');
+                return;
+            }
+            
+            log(`Using token: ${token.substring(0, 50)}...`);
+            
+            try {
+                const response = await fetch('/admin', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    },
+                    credentials: 'include',
+                    redirect: 'manual'
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`);
+                log(`Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+                
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('Location');
+                    log(`Redirect to: ${location}`);
+                }
+                
+                // Check for custom headers from middleware
+                const userId = response.headers.get('x-user-id');
+                const userRoles = response.headers.get('x-user-roles');
+                
+                if (userId) {
+                    log(`Middleware set user ID: ${userId}`);
+                }
+                if (userRoles) {
+                    log(`Middleware set user roles: ${userRoles}`);
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        async function testRegularRoute() {
+            log('📄 Testing regular route...');
+            
+            try {
+                const response = await fetch('/dashboard', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    },
+                    redirect: 'manual'
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('Location');
+                    log(`Redirect to: ${location}`);
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        function checkTokens() {
+            log('🔑 Checking current tokens...');
+            
+            const localStorageToken = localStorage.getItem('access_token');
+            const cookies = document.cookie;
+            
+            log(`localStorage token: ${localStorageToken ? 'Present (' + localStorageToken.length + ' chars)' : 'Not found'}`);
+            log(`Document cookies: ${cookies || 'None'}`);
+            
+            if (localStorageToken) {
+                try {
+                    const payload = JSON.parse(atob(localStorageToken.split('.')[1]));
+                    log(`Token payload: ${JSON.stringify(payload, null, 2)}`);
+                    
+                    const now = Math.floor(Date.now() / 1000);
+                    const isExpired = payload.exp && now >= payload.exp;
+                    log(`Token expiry: ${new Date(payload.exp * 1000).toLocaleString()} (${isExpired ? 'EXPIRED' : 'VALID'})`);
+                    
+                } catch (error) {
+                    log(`Error decoding token: ${error.message}`);
+                }
+            }
+        }
+        
+        // Auto-check tokens on page load
+        window.onload = function() {
+            checkTokens();
+        };
+    </script>
+</body>
+</html>

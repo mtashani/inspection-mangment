@@ -28,7 +28,7 @@ def get_token_from_header_or_cookie(request: Request):
 from fastapi import Response
 
 @router.post("/login", response_model=Token)
-def login(
+async def login(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_session)
@@ -46,8 +46,24 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Get inspector's roles and permissions
+    from app.domains.auth.services.permission_service import PermissionService
+    
+    # Get inspector roles
+    roles = [role.role.name for role in inspector.roles] if hasattr(inspector, 'roles') and inspector.roles else []
+    print(f"🔑 [LOGIN] Roles for {form_data.username}: {roles}")
+    
+    # Get inspector permissions  
+    permissions = await PermissionService.get_inspector_permissions(db, inspector.id)
+    print(f"🔐 [LOGIN] Permissions for {form_data.username}: {len(permissions)} permissions")
+    print(f"🔐 [LOGIN] Sample permissions: {list(permissions)[:10]}")
+    
     # Create access token
-    access_token = AuthService.create_access_token(data={"sub": str(inspector.id)})
+    access_token = AuthService.create_access_token(
+        inspector_id=inspector.id,
+        roles=roles,
+        permissions=permissions
+    )
     print(f"✅ [LOGIN] Success for user: {form_data.username}, token created")
     
     # Set HttpOnly cookie (response is now properly injected)

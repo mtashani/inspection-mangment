@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Shield, Users, Eye } from 'lucide-react'
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Users, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -27,10 +27,9 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 
-import { Inspector, InspectorFilters, SpecialtyCode, AdminPaginatedResponse } from '@/types/admin'
+import { Inspector, InspectorFilters, AdminPaginatedResponse } from '@/types/admin'
 import { getInspectors } from '@/lib/api/admin/inspectors'
 import { InspectorFiltersComponent } from './inspector-filters'
-import { SpecialtyEditor } from './specialty-editor'
 import { BulkOperations } from './bulk-operations'
 import { useDebounce } from '@/hooks/use-debounce'
 import { Checkbox } from '@radix-ui/react-checkbox'
@@ -38,16 +37,13 @@ import { Checkbox } from '@radix-ui/react-checkbox'
 interface InspectorListProps {
   onEdit?: (inspector: Inspector) => void
   onDelete?: (inspector: Inspector) => void
-  onSpecialtyEdit?: (inspector: Inspector) => void
 }
 
-export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorListProps) {
+export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
   const { toast } = useToast()
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState<InspectorFilters>({})
-  const [selectedInspector, setSelectedInspector] = useState<Inspector | null>(null)
-  const [showSpecialtyEditor, setShowSpecialtyEditor] = useState(false)
   const [selectedInspectors, setSelectedInspectors] = useState<Inspector[]>([])
 
   // Debounce search term to avoid excessive API calls
@@ -70,19 +66,11 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
     placeholderData: (previousData) => previousData
   })
 
-  const handleSpecialtyEdit = (inspector: Inspector) => {
-    setSelectedInspector(inspector)
-    setShowSpecialtyEditor(true)
-    onSpecialtyEdit?.(inspector)
-  }
-
   const handleSpecialtyUpdate = () => {
-    setShowSpecialtyEditor(false)
-    setSelectedInspector(null)
     refetch()
     toast({
       title: 'Success',
-      description: 'Inspector specialties updated successfully'
+      description: 'Inspector information updated successfully'
     })
   }
 
@@ -105,37 +93,6 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
   const handleBulkOperationComplete = () => {
     setSelectedInspectors([])
     refetch()
-  }
-
-  const getSpecialtyBadges = (specialties: SpecialtyCode[]) => {
-    const specialtyColors = {
-      PSV: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-      CRANE: 'bg-green-100 text-green-800 hover:bg-green-200',
-      CORROSION: 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-    }
-
-    return specialties.map((specialty) => (
-      <Badge
-        key={specialty}
-        variant="secondary"
-        className={specialtyColors[specialty]}
-      >
-        {specialty}
-      </Badge>
-    ))
-  }
-
-  const getInspectorTypeColor = (type: string) => {
-    switch (type) {
-      case 'INTERNAL':
-        return 'bg-green-100 text-green-800'
-      case 'EXTERNAL':
-        return 'bg-blue-100 text-blue-800'
-      case 'CONTRACTOR':
-        return 'bg-purple-100 text-purple-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
   }
 
   if (error) {
@@ -207,10 +164,10 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
                   </TableHead>
                   <TableHead>Inspector</TableHead>
                   <TableHead>Employee ID</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Specialties</TableHead>
+                  <TableHead>Experience</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Login</TableHead>
+                  <TableHead>Last Login</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -230,15 +187,10 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
                         </div>
                       </TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Skeleton className="h-6 w-12" />
-                          <Skeleton className="h-6 w-16" />
-                        </div>
-                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                     </TableRow>
                   ))
@@ -272,20 +224,8 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
                         {inspector.employeeId}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={getInspectorTypeColor(inspector.inspectorType)}
-                        >
-                          {inspector.inspectorType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 flex-wrap">
-                          {inspector.specialties.length > 0 ? (
-                            getSpecialtyBadges(inspector.specialties)
-                          ) : (
-                            <span className="text-sm text-gray-500">No specialties</span>
-                          )}
+                        <div className="text-sm">
+                          <span className="font-medium">{inspector.yearsExperience}</span> years
                         </div>
                       </TableCell>
                       <TableCell>
@@ -303,6 +243,14 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
                         >
                           {inspector.canLogin ? 'Enabled' : 'Disabled'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-500">
+                          {inspector.lastLoginAt
+                            ? new Date(inspector.lastLoginAt).toLocaleDateString()
+                            : 'Never'
+                          }
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -323,12 +271,6 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Inspector
                               </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSpecialtyEdit(inspector)}
-                            >
-                              <Shield className="mr-2 h-4 w-4" />
-                              Manage Specialties
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -379,16 +321,6 @@ export function InspectorList({ onEdit, onDelete, onSpecialtyEdit }: InspectorLi
           )}
         </CardContent>
       </Card>
-
-      {/* Specialty Editor Dialog */}
-      {selectedInspector && (
-        <SpecialtyEditor
-          inspector={selectedInspector}
-          open={showSpecialtyEditor}
-          onOpenChange={setShowSpecialtyEditor}
-          onSuccess={handleSpecialtyUpdate}
-        />
-      )}
     </div>
   )
 }

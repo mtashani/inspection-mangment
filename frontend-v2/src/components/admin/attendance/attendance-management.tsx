@@ -392,16 +392,7 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
                 </Select>
               </div>
               
-              {selectedInspector && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Specialties:</span>
-                  {selectedInspector.specialties.map((specialty) => (
-                    <Badge key={specialty} variant="outline" className="text-xs">
-                      {specialty}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {/* Specialties section removed - no longer applicable */}
             </div>
           ) : (
             <Alert>

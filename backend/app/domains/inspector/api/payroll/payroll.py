@@ -11,7 +11,7 @@ from app.domains.inspector.schemas.payroll import (
 )
 from app.domains.inspector.services.payroll_service import PayrollService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin, require_permission, Permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ def get_all_payroll_records(
     jalali_year: Optional[int] = Query(None),
     jalali_month: Optional[int] = Query(None),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get all payroll records (admin only).
@@ -33,7 +33,7 @@ def get_all_payroll_records(
 def create_payroll_record(
     payroll_data: PayrollRecordCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Create a new payroll record (admin only).
@@ -46,7 +46,7 @@ def create_payroll_record(
 def get_payroll_record(
     payroll_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get a specific payroll record.
@@ -57,9 +57,22 @@ def get_payroll_record(
         raise HTTPException(status_code=404, detail="Payroll record not found.")
     
     # Check permissions
-    if current_user.is_admin or Permission.PAYROLL_VIEW_ALL in getattr(current_user, "permissions", []):
+    from app.domains.auth.services.auth_service import AuthService
+    auth_service = AuthService(db)
+    
+    has_admin_permission = auth_service.has_permission(
+        current_inspector.id, "admin", "manage"
+    )
+    has_payroll_view_all = auth_service.has_permission(
+        current_inspector.id, "payroll", "view_all"
+    )
+    has_payroll_view_own = auth_service.has_permission(
+        current_inspector.id, "payroll", "view_own"
+    )
+    
+    if has_admin_permission or has_payroll_view_all:
         pass
-    elif current_user.id == record.inspector_id and Permission.PAYROLL_VIEW_OWN in getattr(current_user, "permissions", []):
+    elif current_inspector.id == record.inspector_id and has_payroll_view_own:
         pass
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view this payroll.")
@@ -71,7 +84,7 @@ def update_payroll_record(
     payroll_id: int,
     payroll_data: PayrollRecordUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Update a payroll record (admin only).
@@ -84,7 +97,7 @@ def update_payroll_record(
 def delete_payroll_record(
     payroll_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Delete a payroll record (admin only).
@@ -99,15 +112,29 @@ def get_inspector_payroll_records(
     jalali_year: Optional[int] = Query(None),
     jalali_month: Optional[int] = Query(None),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get payroll records for a specific inspector.
     Inspector can only view their own, admin can view any.
     """
-    if current_user.is_admin or Permission.PAYROLL_VIEW_ALL in getattr(current_user, "permissions", []):
+    # Check permissions
+    from app.domains.auth.services.auth_service import AuthService
+    auth_service = AuthService(db)
+    
+    has_admin_permission = auth_service.has_permission(
+        current_inspector.id, "admin", "manage"
+    )
+    has_payroll_view_all = auth_service.has_permission(
+        current_inspector.id, "payroll", "view_all"
+    )
+    has_payroll_view_own = auth_service.has_permission(
+        current_inspector.id, "payroll", "view_own"
+    )
+    
+    if has_admin_permission or has_payroll_view_all:
         pass
-    elif current_user.id == inspector_id and Permission.PAYROLL_VIEW_OWN in getattr(current_user, "permissions", []):
+    elif current_inspector.id == inspector_id and has_payroll_view_own:
         pass
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view this payroll.")
@@ -120,7 +147,7 @@ def get_inspector_payroll_records(
 def calculate_payroll(
     payroll_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Calculate payroll automatically based on attendance (admin only).
@@ -134,7 +161,7 @@ def add_payroll_item(
     payroll_id: int,
     item_data: PayrollItemCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Add a payroll item (admin only).
@@ -147,7 +174,7 @@ def add_payroll_item(
 def get_payroll_items(
     payroll_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get all items for a payroll record.
@@ -161,7 +188,7 @@ def update_payroll_item(
     item_id: int,
     item_data: PayrollItemUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Update a payroll item (admin only).
@@ -174,7 +201,7 @@ def update_payroll_item(
 def delete_payroll_item(
     item_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Delete a payroll item (admin only).
@@ -188,7 +215,7 @@ def get_payroll_summary(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get payroll summary for a specific month (admin only).

@@ -6,7 +6,7 @@ from sqlmodel import Session
 from io import BytesIO
 import json
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin
+from app.domains.auth.dependencies import get_current_active_inspector, require_admin_access
 from app.domains.inspector.services.reporting_service import ReportingService
 from app.domains.inspector.schemas.reports import (
     AttendanceReportResponse,
@@ -24,7 +24,7 @@ router = APIRouter()
 async def generate_attendance_report(
     filters: ReportFilters,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Generate comprehensive attendance report based on filters.
@@ -42,7 +42,7 @@ async def generate_attendance_report(
 async def export_data(
     export_request: ExportRequest,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Export attendance data in specified format (CSV, Excel, PDF, JSON).
@@ -88,7 +88,7 @@ async def export_data(
 async def bulk_export_data(
     bulk_request: BulkExportRequest,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Bulk export multiple report types in specified format.
@@ -164,7 +164,7 @@ async def bulk_export_data(
 @router.get("/reports/formats", response_model=AvailableFormatsResponse)
 async def get_available_formats(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Get list of supported export formats and their capabilities.
@@ -199,7 +199,7 @@ async def get_available_formats(
 @router.get("/reports/templates")
 async def get_report_templates(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Get predefined report templates for common use cases.
@@ -273,7 +273,7 @@ async def quick_export_template(
     jalali_year: Optional[int] = Query(None, description="Jalali year filter"),
     jalali_month: Optional[int] = Query(None, description="Jalali month filter"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Quick export using predefined templates with optional date filters.
@@ -356,7 +356,7 @@ async def quick_export_template(
 async def get_sample_report(
     format: str = Query("json", description="Sample format to return"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Get a sample report structure for API documentation and testing.
@@ -407,7 +407,7 @@ async def get_sample_report(
 @router.get("/reports/health")
 async def reports_health_check(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_admin_access)
 ):
     """
     Health check for reporting services.

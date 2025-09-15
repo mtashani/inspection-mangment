@@ -189,7 +189,7 @@ export async function exportTemplate(id: string, format: 'JSON' | 'YAML' = 'JSON
   const response = await fetch(`/api/v1/admin/templates/${id}/export?format=${format.toLowerCase()}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   })
   
@@ -210,7 +210,7 @@ export async function importTemplate(file: File): Promise<ReportTemplate> {
   const response = await fetch('/api/v1/admin/templates/import', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
     body: formData,
   })

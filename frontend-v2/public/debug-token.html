@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Token Debugger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .token-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 JWT Token Debugger</h2>
+        <p>This tool helps debug JWT token issues in the admin panel.</p>
+        
+        <button onclick="analyzeCurrentToken()">🔍 Analyze Current Token</button>
+        <button onclick="testAdminAccess()">🛡️ Test Admin Access</button>
+        <button onclick="clearAndRefresh()">🔄 Clear Tokens & Refresh</button>
+        
+        <div id="results"></div>
+        
+        <h3>📋 Manual Token Analysis</h3>
+        <p>Paste a JWT token here to decode it:</p>
+        <textarea id="manualToken" placeholder="Paste JWT token here..." style="width: 100%; height: 100px; font-family: monospace;"></textarea>
+        <button onclick="decodeManualToken()">🔍 Decode Token</button>
+        
+        <div id="manualResults"></div>
+    </div>
+
+    <script>
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (error) {
+                throw new Error('Invalid JWT token: ' + error.message);
+            }
+        }
+        
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleString() + ' (' + (Date.now() < timestamp * 1000 ? 'Valid' : 'EXPIRED') + ')';
+        }
+        
+        function analyzeCurrentToken() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>🔍 Current Token Analysis</h3>';
+            
+            // Check localStorage
+            const tokenKeys = ['access_token', 'token', 'auth_token', 'jwt_token'];
+            let foundTokens = [];
+            
+            tokenKeys.forEach(key => {
+                const token = localStorage.getItem(key);
+                if (token) {
+                    foundTokens.push({key, token});
+                }
+            });
+            
+            // Check sessionStorage
+            tokenKeys.forEach(key => {
+                const token = sessionStorage.getItem(key);
+                if (token) {
+                    foundTokens.push({key: key + ' (session)', token});
+                }
+            });
+            
+            if (foundTokens.length === 0) {
+                resultsDiv.innerHTML += '<div class="warning">⚠️ No tokens found in storage</div>';
+                return;
+            }
+            
+            foundTokens.forEach(({key, token}) => {
+                resultsDiv.innerHTML += `<h4>Token: ${key}</h4>`;
+                
+                try {
+                    const decoded = decodeJWT(token);
+                    const isExpired = decoded.exp && Date.now() >= decoded.exp * 1000;
+                    
+                    resultsDiv.innerHTML += `
+                        <div class="${isExpired ? 'error' : 'success'}">
+                            ${isExpired ? '❌ Token is EXPIRED' : '✅ Token is valid'}
+                        </div>
+                        <div class="json-display">${JSON.stringify(decoded, null, 2)}</div>
+                        <div class="token-display">
+                            <strong>Issued:</strong> ${formatTimestamp(decoded.iat)}<br>
+                            <strong>Expires:</strong> ${formatTimestamp(decoded.exp)}<br>
+                            <strong>Subject:</strong> ${decoded.sub}<br>
+                            <strong>Roles:</strong> ${JSON.stringify(decoded.roles || [])}<br>
+                            <strong>Permissions:</strong> ${JSON.stringify(decoded.permissions || [])}<br>
+                            <strong>Type:</strong> ${decoded.type || 'unknown'}
+                        </div>
+                    `;
+                    
+                    // Check admin access
+                    const roles = decoded.roles || [];
+                    const hasAdmin = roles.some(role => role.toLowerCase().includes('admin'));
+                    resultsDiv.innerHTML += `
+                        <div class="${hasAdmin ? 'success' : 'error'}">
+                            ${hasAdmin ? '✅ Has admin role' : '❌ No admin role found'}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    resultsDiv.innerHTML += `<div class="error">❌ Error decoding token: ${error.message}</div>`;
+                }
+            });
+        }
+        
+        function testAdminAccess() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += '<h3>🛡️ Admin Access Test</h3>';
+            
+            // Test middleware validation logic
+            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            if (!token) {
+                resultsDiv.innerHTML += '<div class="error">❌ No access token found</div>';
+                return;
+            }
+            
+            try {
+                const decoded = decodeJWT(token);
+                const roles = decoded.roles || [];
+                
+                // Replicate the middleware logic
+                const isAdmin = roles.some(role => role.toLowerCase().includes('admin'));
+                
+                resultsDiv.innerHTML += `
+                    <div class="json-display">
+                        Middleware Logic Test:
+                        User Roles: ${JSON.stringify(roles)}
+                        Admin Check: roles.some(role => role.toLowerCase().includes('admin'))
+                        Result: ${isAdmin}
+                    </div>
+                    <div class="${isAdmin ? 'success' : 'error'}">
+                        ${isAdmin ? '✅ Should have admin access' : '❌ Should be denied admin access'}
+                    </div>
+                `;
+                
+                // Check token expiration
+                const isExpired = decoded.exp && Date.now() >= decoded.exp * 1000;
+                if (isExpired) {
+                    resultsDiv.innerHTML += '<div class="error">❌ Token is expired - this could be the issue!</div>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Error testing admin access: ${error.message}</div>`;
+            }
+        }
+        
+        function decodeManualToken() {
+            const token = document.getElementById('manualToken').value.trim();
+            const resultsDiv = document.getElementById('manualResults');
+            
+            if (!token) {
+                resultsDiv.innerHTML = '<div class="error">❌ Please enter a token</div>';
+                return;
+            }
+            
+            try {
+                const decoded = decodeJWT(token);
+                const isExpired = decoded.exp && Date.now() >= decoded.exp * 1000;
+                
+                resultsDiv.innerHTML = `
+                    <h3>🔍 Manual Token Analysis</h3>
+                    <div class="${isExpired ? 'error' : 'success'}">
+                        ${isExpired ? '❌ Token is EXPIRED' : '✅ Token is valid'}
+                    </div>
+                    <div class="json-display">${JSON.stringify(decoded, null, 2)}</div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error decoding token: ${error.message}</div>`;
+            }
+        }
+        
+        function clearAndRefresh() {
+            localStorage.clear();
+            sessionStorage.clear();
+            location.reload();
+        }
+        
+        // Auto-run analysis on page load
+        window.onload = function() {
+            analyzeCurrentToken();
+        };
+    </script>
+</body>
+</html>

@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
     
+    # Redis Cache Settings
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: Optional[str] = None
+    CACHE_TTL: int = 300  # 5 minutes default TTL for permission cache
+    
     # Database settings
     DB_ENV: str = "development"
     SQLITE_DB_PATH: str = "backend/inspection_management.db"

@@ -46,8 +46,7 @@ const mockInspector: Inspector = {
   name: 'John Doe',
   employeeId: 'EMP001',
   email: 'john@example.com',
-  inspectorType: 'INTERNAL',
-  specialties: ['PSV'],
+  // inspectorType and specialties removed - no longer used
   active: true,
   canLogin: true,
   attendanceTrackingEnabled: true,
@@ -91,16 +90,7 @@ describe('InspectorForm', () => {
     })
   })
 
-  it('handles specialty selection', () => {
-    render(<InspectorForm />, { wrapper: createWrapper() })
-    
-    // Navigate to specialties tab
-    const specialtiesTab = screen.getByRole('tab', { name: /specialties/i })
-    fireEvent.click(specialtiesTab)
-    
-    // Check PSV specialty
-    const psvCheckbox = screen.getByRole('checkbox', { name: /psv/i })
-    fireEvent.click(psvCheckbox)
+  // Test for specialties removed - no longer applicable
     
     expect(psvCheckbox).toBeChecked()
   })

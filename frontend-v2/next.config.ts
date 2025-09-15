@@ -6,6 +6,9 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+  // Fix workspace root inference issue
+  outputFileTracingRoot: __dirname,
+  
   // Performance optimizations
   experimental: {
     optimizePackageImports: [

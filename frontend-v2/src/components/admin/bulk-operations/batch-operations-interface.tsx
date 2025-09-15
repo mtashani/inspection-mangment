@@ -86,8 +86,6 @@ interface InspectorBatchUpdate {
     active?: boolean
     canLogin?: boolean
     attendanceTrackingEnabled?: boolean
-    inspectorType?: string
-    specialties?: string[]
     baseHourlyRate?: number
     overtimeMultiplier?: number
   }
@@ -485,13 +483,6 @@ export function BatchOperationsInterface() {
                         <Label className="text-sm">
                           {inspector.name} ({inspector.employeeId})
                         </Label>
-                        <div className="flex gap-1 ml-auto">
-                          {inspector.specialties.map(specialty => (
-                            <Badge key={specialty} variant="outline" className="text-xs">
-                              {specialty}
-                            </Badge>
-                          ))}
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -549,29 +540,6 @@ export function BatchOperationsInterface() {
                       />
                       <Label htmlFor="update-attendance">Enable Attendance Tracking</Label>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="inspector-type">Inspector Type</Label>
-                    <Select 
-                      value={inspectorBatchConfig.updates.inspectorType || ''} 
-                      onValueChange={(value) => 
-                        setInspectorBatchConfig(prev => ({
-                          ...prev,
-                          updates: { ...prev.updates, inspectorType: value || undefined }
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="inspector-type">
-                        <SelectValue placeholder="Select inspector type (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">No change</SelectItem>
-                        <SelectItem value="INTERNAL">Internal</SelectItem>
-                        <SelectItem value="EXTERNAL">External</SelectItem>
-                        <SelectItem value="CONTRACTOR">Contractor</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

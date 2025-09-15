@@ -2,28 +2,25 @@
 
 ## Inspection Management System
 
-A comprehensive platform for managing industrial equipment inspections in refinery environments. The system handles multiple inspection types including PSV calibration tracking, corrosion monitoring, crane management, and general equipment inspections.
+A comprehensive industrial equipment inspection management platform designed for tracking and managing various types of equipment inspections including PSV (Pressure Safety Valve) calibration, NDT (Non-Destructive Testing), mechanical inspections, and crane management.
 
-### Core Features
+### Key Features
 
-- **Professional Report System**: Template-based reporting with auto-filled fields, hierarchical structure, and multiple data types (text, date, select, image, etc.)
-- **Risk-Based Inspection (RBI) Calculation**: Multi-level RBI system with configurable scoring tables for determining optimal inspection intervals
-- **Equipment Management**: Comprehensive equipment tracking with maintenance history and condition monitoring
-- **User Management**: Role-based access control with inspector and admin roles
-- **Analytics & Reporting**: Data visualization and trend analysis for maintenance planning
-
-### Domain Areas
-
-- Equipment inspection workflows
-- PSV (Pressure Safety Valve) calibration tracking
-- Corrosion monitoring and analysis
-- Crane inspection and maintenance
-- Daily reporting and documentation
-- Risk assessment and calculation
+- **Multi-type Inspection Management**: PSV, NDT, mechanical, and crane inspections
+- **Risk-Based Inspection (RBI) System**: Advanced RBI calculation engine with Level 1/2/3 analysis capabilities
+- **Role-Based Access Control (RBAC)**: Comprehensive permission system with resource-based access control
+- **Real-time Notifications**: WebSocket-based notification system
+- **Audit Trail**: Complete historical tracking and reporting
+- **Batch Processing**: Advanced batch calculation capabilities for large equipment datasets
+- **Fallback Management**: Intelligent fallback systems for data quality issues
 
 ### Target Users
 
-- **Inspectors**: Field personnel conducting equipment inspections
-- **Maintenance Planners**: Staff scheduling and planning maintenance activities
-- **RBI Analysts**: Specialists performing risk-based inspection calculations
-- **System Administrators**: Personnel managing templates, configurations, and user access
+- **Inspectors**: Create and manage inspection reports
+- **Supervisors**: Review and approve inspections
+- **Administrators**: System configuration and user management
+- **Analysts**: Generate reports and perform risk assessments
+
+### Business Domain
+
+Industrial equipment maintenance and compliance management with focus on safety-critical equipment in oil & gas, petrochemical, and manufacturing industries.

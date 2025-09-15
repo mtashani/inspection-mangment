@@ -38,29 +38,64 @@ export async function validateAdminAccess(request: NextRequest): Promise<{
     }
 
     // Verify JWT token
+    console.log('🔑 JWT Secret being used:', JWT_SECRET?.substring(0, 10) + '...');
     const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
     
-    const user = payload as unknown as JWTPayload;
-    
-    // Check if token is expired
-    if (user.exp && Date.now() >= user.exp * 1000) {
+    try {
+      const { payload } = await jwtVerify(token, secret);
+      
+      const user = payload as unknown as JWTPayload;
+      console.log('🎯 Decoded JWT payload:', {
+        sub: user.sub,
+        username: user.username,
+        roles: user.roles,
+        exp: user.exp,
+        iat: user.iat,
+        tokenExpiry: user.exp ? new Date(user.exp * 1000).toISOString() : 'No expiry',
+        currentTime: new Date().toISOString(),
+        isExpired: user.exp ? Date.now() >= user.exp * 1000 : false
+      });
+      
+      // Check if token is expired
+      if (user.exp && Date.now() >= user.exp * 1000) {
+        console.error('❌ Token has expired!');
+        return {
+          isValid: false,
+          isAdmin: false,
+          error: 'Token has expired'
+        };
+      }
+
+      // Check if user has admin role (check for 'admin' substring in any role)
+      const isAdmin = user.roles?.some(role => {
+        const hasAdmin = role.toLowerCase().includes('admin');
+        console.log(`🔍 Checking role "${role}" - contains admin: ${hasAdmin}`);
+        return hasAdmin;
+      }) || false;
+      
+      // Debug logging
+      console.log('🔍 Final admin access check result:', {
+        userRoles: user.roles,
+        isAdmin,
+        userId: user.sub,
+        username: user.username
+      });
+
       return {
-        isValid: false,
-        isAdmin: false,
-        error: 'Token has expired'
+        isValid: true,
+        isAdmin,
+        user
       };
+    } catch (jwtError) {
+      console.error('❌ JWT verification failed:', {
+        error: jwtError.message,
+        tokenPreview: token.substring(0, 50) + '...',
+        secretPreview: JWT_SECRET?.substring(0, 10) + '...'
+      });
+      throw jwtError;
     }
-
-    // Check if user has admin role
-    const isAdmin = user.roles?.some(role => role.toLowerCase() === 'admin') || false;
-
-    return {
-      isValid: true,
-      isAdmin,
-      user
-    };
   } catch (error) {
+    console.error('❌ JWT verification failed:', error);
     return {
       isValid: false,
       isAdmin: false,

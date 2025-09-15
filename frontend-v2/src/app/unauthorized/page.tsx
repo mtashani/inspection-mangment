@@ -1,58 +1,50 @@
 'use client';
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, Home, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { AlertCircle, ArrowLeft, Home } from 'lucide-react';
 
 export default function UnauthorizedPage() {
-  const { user } = useAuth();
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
-            <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
-          </div>
-          <CardTitle className="text-2xl">Access Denied</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-6">
-          <div className="space-y-2">
-            <p className="text-muted-foreground">
-              You don't have permission to access this area of the application.
-            </p>
-            {user && (
-              <p className="text-sm text-muted-foreground">
-                Logged in as: <span className="font-medium">{user.name || user.username}</span>
-              </p>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full mx-auto">
+        <div className="bg-white shadow-lg rounded-lg p-8 text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <AlertCircle className="h-6 w-6 text-red-600" />
           </div>
           
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              If you believe this is an error, please contact your system administrator.
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access the admin panel. Please contact your administrator if you believe this is an error.
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => router.back()}
+              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back
+            </button>
+            
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Go to Dashboard
+            </button>
+          </div>
+          
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              If you believe you should have access to this page, please contact your system administrator.
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link href="/dashboard">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Link>
-            </Button>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/">
-                <Home className="w-4 h-4 mr-2" />
-                Return Home
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

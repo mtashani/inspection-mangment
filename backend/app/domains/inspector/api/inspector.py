@@ -6,6 +6,11 @@ from app.database import get_session
 from app.domains.inspector.models.inspector import Inspector, InspectorCertificationRecord
 from app.domains.inspector.models.enums import InspectorType, InspectorCertification, CertificationLevel
 from app.domains.inspector.schemas.inspector import InspectorCreateRequest, InspectorResponse
+from app.domains.auth.dependencies import (
+    get_current_active_inspector, 
+    require_permission,
+    require_admin_access
+)
 
 router = APIRouter()
 
@@ -21,11 +26,10 @@ def get_inspectors(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     employee_id: Optional[str] = None,
-    inspector_type: Optional[InspectorType] = None,
     active: Optional[bool] = None,
-
     attendance_tracking_enabled: Optional[bool] = None,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(require_permission("inspector", "view"))
 ):
     """Get list of inspectors with optional filtering"""
     query = select(Inspector)
@@ -36,8 +40,6 @@ def get_inspectors(
         query = query.where(Inspector.last_name.contains(last_name))
     if employee_id:
         query = query.where(Inspector.employee_id.contains(employee_id))
-    if inspector_type:
-        query = query.where(Inspector.inspector_type == inspector_type)
     if active is not None:
         query = query.where(Inspector.active == active)
 
@@ -45,16 +47,13 @@ def get_inspectors(
         query = query.where(Inspector.attendance_tracking_enabled == attendance_tracking_enabled)
     
     inspectors = db.exec(query.offset(skip).limit(limit)).all()
-    result = []
-    for i in inspectors:
-        print(f'LOG: id={i.id}, name={i.first_name} {i.last_name}, attendance_tracking_enabled={getattr(i, "attendance_tracking_enabled", None)}, type={type(getattr(i, "attendance_tracking_enabled", None))}')
-        result.append(InspectorResponse.from_model(i))
-    return result
+    return [InspectorResponse.from_model(i) for i in inspectors]
 
 @router.post("/", response_model=InspectorResponse)
 def create_inspector(
     inspector_data: InspectorCreateRequest,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(require_permission("inspector", "create"))
 ):
     """Create new inspector"""
     # Convert the request schema to the Inspector model
@@ -77,27 +76,45 @@ def create_inspector(
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
     
-    return inspector
+    return InspectorResponse.from_model(inspector)
 
 @router.get("/{inspector_id}", response_model=InspectorResponse)
 def get_inspector(
     inspector_id: int,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(get_current_active_inspector)
 ):
     """Get inspector by ID"""
+    # Check permissions: inspector can view own profile or needs view_all permission
+    if current_inspector.id != inspector_id:
+        # Verify current inspector has permission to view other inspectors
+        from app.domains.auth.services.permission_service import PermissionService
+        import asyncio
+        
+        has_view_all = asyncio.run(PermissionService.has_permission(
+            db, current_inspector, "inspector", "view"
+        ))
+        
+        if not has_view_all:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to view other inspectors"
+            )
+    
     inspector = db.get(Inspector, inspector_id)
     if not inspector:
         raise HTTPException(
             status_code=404,
             detail=f"Inspector with ID {inspector_id} not found"
         )
-    return InspectorResponse.model_validate(inspector)
+    return InspectorResponse.from_model(inspector)
 
 @router.put("/{inspector_id}", response_model=Inspector)
 def update_inspector(
     inspector_id: int,
     inspector_update: Inspector,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(require_permission("inspector", "edit_all"))
 ):
     """Update inspector"""
     db_inspector = db.get(Inspector, inspector_id)
@@ -120,7 +137,8 @@ def update_inspector(
 @router.delete("/{inspector_id}")
 def delete_inspector(
     inspector_id: int,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(require_admin_access)
 ):
     """Delete inspector"""
     inspector = db.get(Inspector, inspector_id)
@@ -138,9 +156,26 @@ def delete_inspector(
 @router.get("/{inspector_id}/certifications", response_model=List[InspectorCertificationRecord])
 def get_inspector_certifications(
     inspector_id: int,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(get_current_active_inspector)
 ):
     """Get certifications for an inspector"""
+    # Check permissions: inspector can view own certifications or needs view_all permission
+    if current_inspector.id != inspector_id:
+        # Verify current inspector has permission to view other inspectors' certifications
+        from app.domains.auth.services.permission_service import PermissionService
+        import asyncio
+        
+        has_view_all = asyncio.run(PermissionService.has_permission(
+            db, current_inspector, "inspector", "view"
+        ))
+        
+        if not has_view_all:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to view other inspectors' certifications"
+            )
+    
     inspector = db.get(Inspector, inspector_id)
     if not inspector:
         raise HTTPException(status_code=404, detail="Inspector not found")
@@ -156,7 +191,8 @@ def get_inspector_certifications(
 def add_inspector_certification(
     inspector_id: int,
     certification: InspectorCertificationRecord,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(require_permission("inspector", "edit_all"))
 ):
     """Add certification to an inspector"""
     inspector = db.get(Inspector, inspector_id)
@@ -178,7 +214,8 @@ def add_inspector_certification(
 @router.get("/certifications/{certification_id}", response_model=InspectorCertificationRecord)
 def get_certification(
     certification_id: int,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector: Inspector = Depends(get_current_active_inspector)
 ):
     """Get certification by ID"""
     certification = db.get(InspectorCertificationRecord, certification_id)

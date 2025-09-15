@@ -1,6 +1,6 @@
 # NEW/UPDATED: Payroll API router using domain-driven design principles
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Session
 import datetime
 from app.domains.inspector.models.payroll import PayrollRecord, PayrollItem, PayrollSettings
@@ -11,7 +11,14 @@ from app.domains.inspector.schemas.payroll import (
 )
 from app.domains.inspector.services.payroll_service import PayrollService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin, require_permission, Permission
+from app.domains.auth.dependencies import (
+    get_current_active_inspector, 
+    require_permission,
+    require_admin_access
+)
+
+if TYPE_CHECKING:
+    from app.domains.inspector.models.inspector import Inspector
 
 router = APIRouter()
 
@@ -21,17 +28,28 @@ def get_inspector_payroll(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector: "Inspector" = Depends(get_current_active_inspector)
 ):
-    """
-    Get payroll for an inspector for a Jalali month.
-    Inspector can only view own payroll (and only in last 5 days of month), admin can view any.
-    """
-    if current_user.is_admin or Permission.PAYROLL_VIEW_ALL in getattr(current_user, "permissions", []):
-        pass
-    elif current_user.id == inspector_id and Permission.PAYROLL_VIEW_OWN in getattr(current_user, "permissions", []):
-        pass
-    else:
+    """Get payroll for an inspector for a Jalali month."""
+    # Check permissions: inspector can view own payroll or needs admin permission
+    from app.domains.auth.services.permission_service import PermissionService
+    import asyncio
+    
+    # Admin can view any payroll
+    has_admin = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "admin", "manage"
+    ))
+    
+    # Check payroll view permissions
+    has_view_all = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "payroll", "view_all"
+    ))
+    
+    has_view_own = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "payroll", "view_own"
+    ))
+    
+    if not (has_admin or has_view_all or (current_inspector.id == inspector_id and has_view_own)):
         raise HTTPException(status_code=403, detail="Not authorized to view this payroll.")
     service = PayrollService(db)
     record = service.get_payroll(inspector_id, jalali_year, jalali_month)
@@ -44,7 +62,7 @@ def create_or_update_payroll(
     inspector_id: int,
     payroll_data: PayrollRecordCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_permission(Permission.PAYROLL_EDIT))
+    current_inspector: "Inspector" = Depends(require_permission("payroll", "edit"))
 ):
     """
     Create or update a payroll record for a Jalali month (admin only).
@@ -58,7 +76,7 @@ def add_payroll_item(
     payroll_id: int,
     item_data: PayrollItemCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_permission(Permission.PAYROLL_EDIT))
+    current_inspector: "Inspector" = Depends(require_permission("payroll", "edit"))
 ):
     """
     Add a payroll item (admin only).
@@ -72,7 +90,7 @@ def edit_payroll_item(
     item_id: int,
     item_data: PayrollItemUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_permission(Permission.PAYROLL_EDIT))
+    current_inspector: "Inspector" = Depends(require_permission("payroll", "edit"))
 ):
     """
     Edit a payroll item (admin only).
@@ -85,7 +103,7 @@ def edit_payroll_item(
 def delete_payroll_item(
     item_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_permission(Permission.PAYROLL_EDIT))
+    current_inspector: "Inspector" = Depends(require_permission("payroll", "edit"))
 ):
     """
     Delete a payroll item (admin only).
@@ -100,7 +118,7 @@ def auto_calculate_payroll(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(require_permission(Permission.PAYROLL_FINALIZE))
+    current_inspector: "Inspector" = Depends(require_permission("payroll", "finalize"))
 ):
     """
     Auto-calculate payroll items from attendance (admin only).
@@ -113,16 +131,28 @@ def auto_calculate_payroll(
 def get_all_payrolls_for_inspector(
     inspector_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector: "Inspector" = Depends(get_current_active_inspector)
 ):
-    """
-    Inspector can view all their payrolls (Jalali months, all history). Admin can view any inspector's payrolls.
-    """
-    if current_user.is_admin or Permission.PAYROLL_VIEW_ALL in getattr(current_user, "permissions", []):
-        pass
-    elif current_user.id == inspector_id and Permission.PAYROLL_VIEW_OWN in getattr(current_user, "permissions", []):
-        pass
-    else:
+    """Inspector can view all their payrolls. Admin can view any inspector's payrolls."""
+    # Check permissions: inspector can view own payrolls or needs admin permission
+    from app.domains.auth.services.permission_service import PermissionService
+    import asyncio
+    
+    # Admin can view any payroll
+    has_admin = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "admin", "manage"
+    ))
+    
+    # Check payroll view permissions
+    has_view_all = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "payroll", "view_all"
+    ))
+    
+    has_view_own = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "payroll", "view_own"
+    ))
+    
+    if not (has_admin or has_view_all or (current_inspector.id == inspector_id and has_view_own)):
         raise HTTPException(status_code=403, detail="Not authorized to view these payrolls.")
     service = PayrollService(db)
     records = service.get_all_payrolls_for_inspector(inspector_id)

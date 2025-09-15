@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 
-import { InspectorFilters, InspectorType, SpecialtyCode } from '@/types/admin'
+import { InspectorFilters } from '@/types/admin'
 
 interface InspectorFiltersComponentProps {
   filters: InspectorFilters
@@ -24,42 +24,6 @@ interface InspectorFiltersComponentProps {
 
 export function InspectorFiltersComponent({ filters, onFiltersChange }: InspectorFiltersComponentProps) {
   const [isOpen, setIsOpen] = useState(false)
-
-  const inspectorTypes: { value: InspectorType; label: string }[] = [
-    { value: 'INTERNAL', label: 'Internal' },
-    { value: 'EXTERNAL', label: 'External' },
-    { value: 'CONTRACTOR', label: 'Contractor' },
-  ]
-
-  const specialties: { value: SpecialtyCode; label: string }[] = [
-    { value: 'PSV', label: 'PSV' },
-    { value: 'CRANE', label: 'Crane' },
-    { value: 'CORROSION', label: 'Corrosion' },
-  ]
-
-  const handleInspectorTypeChange = (type: InspectorType, checked: boolean) => {
-    const currentTypes = filters.inspectorType ? [filters.inspectorType] : []
-    const newTypes = checked 
-      ? [...currentTypes, type]
-      : currentTypes.filter(t => t !== type)
-    
-    onFiltersChange({
-      ...filters,
-      inspectorType: newTypes.length > 0 ? newTypes[0] : undefined // For now, single selection
-    })
-  }
-
-  const handleSpecialtyChange = (specialty: SpecialtyCode, checked: boolean) => {
-    const currentSpecialties = filters.specialties || []
-    const newSpecialties = checked
-      ? [...currentSpecialties, specialty]
-      : currentSpecialties.filter(s => s !== specialty)
-    
-    onFiltersChange({
-      ...filters,
-      specialties: newSpecialties.length > 0 ? newSpecialties : undefined
-    })
-  }
 
   const handleStatusChange = (status: 'active' | 'canLogin', checked: boolean) => {
     onFiltersChange({
@@ -74,10 +38,9 @@ export function InspectorFiltersComponent({ filters, onFiltersChange }: Inspecto
 
   const getActiveFiltersCount = () => {
     let count = 0
-    if (filters.inspectorType) count++
-    if (filters.specialties?.length) count++
     if (filters.active !== undefined) count++
     if (filters.canLogin !== undefined) count++
+    if (filters.yearsExperience) count++
     return count
   }
 
@@ -116,58 +79,6 @@ export function InspectorFiltersComponent({ filters, onFiltersChange }: Inspecto
           </div>
           <DropdownMenuSeparator />
           
-          {/* Inspector Type Filter */}
-          <div className="p-3">
-            <Label className="text-sm font-medium mb-2 block">Inspector Type</Label>
-            <div className="space-y-2">
-              {inspectorTypes.map((type) => (
-                <div key={type.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`type-${type.value}`}
-                    checked={filters.inspectorType === type.value}
-                    onCheckedChange={(checked) => 
-                      handleInspectorTypeChange(type.value, checked as boolean)
-                    }
-                  />
-                  <Label 
-                    htmlFor={`type-${type.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {type.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DropdownMenuSeparator />
-
-          {/* Specialties Filter */}
-          <div className="p-3">
-            <Label className="text-sm font-medium mb-2 block">Specialties</Label>
-            <div className="space-y-2">
-              {specialties.map((specialty) => (
-                <div key={specialty.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`specialty-${specialty.value}`}
-                    checked={filters.specialties?.includes(specialty.value) || false}
-                    onCheckedChange={(checked) => 
-                      handleSpecialtyChange(specialty.value, checked as boolean)
-                    }
-                  />
-                  <Label 
-                    htmlFor={`specialty-${specialty.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {specialty.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DropdownMenuSeparator />
-
           {/* Status Filters */}
           <div className="p-3">
             <Label className="text-sm font-medium mb-2 block">Status</Label>
@@ -210,38 +121,6 @@ export function InspectorFiltersComponent({ filters, onFiltersChange }: Inspecto
       {/* Active Filters Display */}
       {activeFiltersCount > 0 && (
         <div className="flex items-center gap-1 flex-wrap">
-          {filters.inspectorType && (
-            <Badge variant="secondary" className="text-xs">
-              Type: {filters.inspectorType}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
-                onClick={() => onFiltersChange({ ...filters, inspectorType: undefined })}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          )}
-          {filters.specialties?.map((specialty) => (
-            <Badge key={specialty} variant="secondary" className="text-xs">
-              {specialty}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto w-auto p-0 ml-1 hover:bg-transparent"
-                onClick={() => {
-                  const newSpecialties = filters.specialties?.filter(s => s !== specialty)
-                  onFiltersChange({ 
-                    ...filters, 
-                    specialties: newSpecialties?.length ? newSpecialties : undefined 
-                  })
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          ))}
           {filters.active && (
             <Badge variant="secondary" className="text-xs">
               Active

@@ -82,7 +82,7 @@ export default function EditInspectorPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Edit Inspector: {inspector.name}</h1>
         <p className="text-muted-foreground">
-          Update inspector information and specialties.
+          Update inspector information.
         </p>
       </div>
       <InspectorForm inspector={inspector} />

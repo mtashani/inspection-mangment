@@ -16,7 +16,8 @@ import {
   BarChart3,
   Clock,
   ArrowRight,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { QuickAction } from '@/types/admin';
@@ -120,10 +121,17 @@ const ActionCard: React.FC<ActionCardProps> = ({
 const quickActions: QuickAction[] = [
   {
     title: 'Manage Inspectors',
-    description: 'Add, edit, and manage inspector accounts, specialties, and permissions',
+    description: 'Add, edit, and manage inspector accounts and information',
     href: '/admin/inspectors',
     icon: 'Users',
     color: 'primary'
+  },
+  {
+    title: 'RBAC Management',
+    description: 'Manage roles, permissions, and user access control',
+    href: '/admin/rbac',
+    icon: 'Shield',
+    color: 'secondary'
   },
   {
     title: 'Track Attendance',
@@ -147,15 +155,8 @@ const quickActions: QuickAction[] = [
     color: 'warning'
   },
   {
-    title: 'Bulk Operations',
-    description: 'Import/export data and perform batch operations on system records',
-    href: '/admin/bulk-operations',
-    icon: 'Upload',
-    color: 'danger'
-  },
-  {
     title: 'System Settings',
-    description: 'Configure system settings, permissions, and administrative options',
+    description: 'Configure system settings and administrative options',
     href: '/admin/settings',
     icon: 'Settings',
     color: 'default'
@@ -172,7 +173,8 @@ const iconMap = {
   Plus,
   BarChart3,
   Clock,
-  Zap
+  Zap,
+  Shield
 };
 
 export const QuickActions: React.FC<QuickActionsProps> = ({ className }) => {

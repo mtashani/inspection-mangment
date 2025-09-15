@@ -131,8 +131,18 @@ class ConnectionManager:
             data = json.loads(message)
             message_type = data.get("type")
             
-            if message_type == "pong":
+            if message_type == "ping":
+                # Respond to client ping with pong
+                await self.send_personal_message({
+                    "type": "pong",
+                    "timestamp": datetime.utcnow().isoformat()
+                }, websocket)
                 # Update last ping time
+                if websocket in self.connection_metadata:
+                    self.connection_metadata[websocket]["last_ping"] = datetime.utcnow()
+            
+            elif message_type == "pong":
+                # Update last ping time for server-initiated pings
                 if websocket in self.connection_metadata:
                     self.connection_metadata[websocket]["last_ping"] = datetime.utcnow()
             

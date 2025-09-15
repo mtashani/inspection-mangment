@@ -13,6 +13,71 @@ from app.common.services.date_conversion_service import DateConversionService
 class AttendanceService:
     def __init__(self, db: Session):
         self.db = db
+        
+    def get_attendance_by_id(self, attendance_id: int) -> Optional[AttendanceRecord]:
+        """Get a specific attendance record by ID."""
+        return self.db.get(AttendanceRecord, attendance_id)
+        
+    def get_all_attendance(self, jalali_year: int, jalali_month: int) -> List[AttendanceRecord]:
+        """Get all attendance records for a Jalali month (admin only)."""
+        # Convert Jalali month range to Gregorian date range
+        start_date = jalali_calendar.jalali_to_gregorian(jalali_year, jalali_month, 1)
+        days_in_month = jalali_calendar.get_jalali_month_days(jalali_year, jalali_month)
+        end_date = jalali_calendar.jalali_to_gregorian(jalali_year, jalali_month, days_in_month)
+        
+        # Query using Gregorian date range for all inspectors
+        records = list(self.db.exec(
+            select(AttendanceRecord).where(
+                AttendanceRecord.date >= start_date,
+                AttendanceRecord.date <= end_date
+            ).order_by(AttendanceRecord.inspector_id, AttendanceRecord.date)
+        ))
+        
+        return records
+        
+    def create_attendance(self, data: AttendanceRecordCreate) -> AttendanceRecord:
+        """Create a new attendance record (admin only)."""
+        # Resolve input date
+        resolved_date = DateConversionService.resolve_date_input(data.date, data.jalali_date)
+        
+        # Create new record
+        record_data = data.model_dump(exclude={"jalali_date"})
+        record_data["date"] = resolved_date
+        record = AttendanceRecord(**record_data)
+        self.db.add(record)
+        self.db.commit()
+        self.db.refresh(record)
+        return record
+        
+    def update_attendance(self, attendance_id: int, data: AttendanceRecordUpdate) -> AttendanceRecord:
+        """Update an existing attendance record (admin only)."""
+        record = self.db.get(AttendanceRecord, attendance_id)
+        if not record:
+            raise ValueError("Attendance record not found")
+            
+        # Resolve input date if provided
+        if data.date or data.jalali_date:
+            resolved_date = DateConversionService.resolve_date_input(data.date, data.jalali_date)
+            record.date = resolved_date
+            
+        # Update other fields
+        for field, value in data.model_dump(exclude={"date", "jalali_date"}).items():
+            if value is not None:
+                setattr(record, field, value)
+                
+        record.updated_at = datetime.datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(record)
+        return record
+        
+    def delete_attendance(self, attendance_id: int) -> None:
+        """Delete an attendance record (admin only)."""
+        record = self.db.get(AttendanceRecord, attendance_id)
+        if not record:
+            raise ValueError("Attendance record not found")
+            
+        self.db.delete(record)
+        self.db.commit()
 
     def get_attendance(self, inspector_id: int, jalali_year: int, jalali_month: int) -> List[AttendanceRecord]:
         """Get attendance records for an inspector for a Jalali month (recorded + predicted)."""

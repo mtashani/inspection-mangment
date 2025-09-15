@@ -9,14 +9,14 @@ from app.domains.inspector.schemas.work_cycle import (
 )
 from app.domains.inspector.services.work_cycle_service import WorkCycleService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 
 router = APIRouter()
 
 @router.get("", response_model=List[WorkCycleResponse])
 def get_all_work_cycles(
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get all work cycles (admin only).
@@ -29,7 +29,7 @@ def get_all_work_cycles(
 def create_work_cycle(
     work_cycle_data: WorkCycleCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Create a new work cycle (admin only).
@@ -42,7 +42,7 @@ def create_work_cycle(
 def get_work_cycle(
     cycle_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get a specific work cycle.
@@ -58,7 +58,7 @@ def update_work_cycle(
     cycle_id: int,
     work_cycle_data: WorkCycleUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Update a work cycle (admin only).
@@ -74,7 +74,7 @@ def update_work_cycle(
 def delete_work_cycle(
     cycle_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Delete a work cycle (admin only).
@@ -87,16 +87,24 @@ def delete_work_cycle(
 def get_inspector_work_cycles(
     inspector_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get work cycles for a specific inspector.
     Admins can view all, inspectors only their own.
     """
-    if current_user.is_admin:
-        pass
-    elif current_user.id == inspector_id:
-        pass
+    # Check permissions using the RBAC system
+    from app.domains.auth.services.auth_service import AuthService
+    auth_service = AuthService(db)
+    
+    has_admin_permission = auth_service.has_permission(
+        current_inspector.id, "admin", "manage"
+    )
+    
+    if has_admin_permission:
+        pass  # Admin can view any inspector's work cycles
+    elif current_inspector.id == inspector_id:
+        pass  # Inspector can view their own work cycles
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view these work cycles.")
     
@@ -110,7 +118,7 @@ def generate_attendance_from_cycle(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Generate attendance records from a work cycle for a specific month (admin only).

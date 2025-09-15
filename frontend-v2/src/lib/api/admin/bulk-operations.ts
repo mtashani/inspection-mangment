@@ -57,7 +57,7 @@ export async function importDataFromFile(
   const response = await fetch('/api/v1/admin/bulk-operations/import', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
     body: formData,
   })
@@ -105,7 +105,7 @@ export async function validateImportFile(
   const response = await fetch('/api/v1/admin/bulk-operations/validate', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
     body: formData,
   })
@@ -169,7 +169,7 @@ export async function downloadBulkOperationResult(id: string): Promise<Blob> {
   const response = await fetch(`/api/v1/admin/bulk-operations/${id}/download`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   })
   
@@ -221,7 +221,7 @@ export async function getImportTemplate(
     {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
       },
     }
   )

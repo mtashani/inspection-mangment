@@ -69,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !user.roles) {
       return false;
     }
-    // Check if user has admin role (case insensitive)
-    return user.roles.some(role => role.toLowerCase() === 'admin');
+    // Check if user has Global Admin role (exact match)
+    return user.roles.includes('Global Admin');
   };
 
   useEffect(() => {

@@ -6,12 +6,10 @@ import {
   Inspector,
   InspectorFormData,
   InspectorFilters,
-  SpecialtyPermissions,
-  SpecialtyCode,
   AdminApiResponse,
   AdminPaginatedResponse
 } from '@/types/admin'
-import { adminApiGet, adminApiPost, adminApiPut, adminApiDelete, adminApiRequest, buildQueryParams } from './base'
+import { adminApiGet, adminApiPost, adminApiPut, adminApiDelete, adminApiRequest, adminApiGetAuthenticated, buildQueryParams } from './base'
 
 // Check environment variable for mock data usage
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
@@ -35,7 +33,7 @@ export async function getInspectors(
     ...filters
   } as Record<string, unknown>)
   
-  const inspectors = await adminApiGet<Inspector[]>(`/inspectors${queryParams}`)
+  const inspectors = await adminApiGetAuthenticated<Inspector[]>(`/inspectors${queryParams}`)
   
   // Convert to paginated response format
   return {
@@ -56,7 +54,7 @@ export async function getInspectors(
  */
 export async function getAllInspectors(filters?: InspectorFilters): Promise<Inspector[]> {
   const queryParams = buildQueryParams((filters || {}) as Record<string, unknown>)
-  const inspectors = await adminApiGet<Inspector[]>(`/inspectors${queryParams}`)
+  const inspectors = await adminApiGetAuthenticated<Inspector[]>(`/inspectors${queryParams}`)
   return inspectors
 }
 
@@ -100,45 +98,7 @@ export async function deleteInspector(id: number): Promise<void> {
   await adminApiDelete<void>(`/inspectors/${id}`)
 }
 
-/**
- * Update inspector specialties
- */
-export async function updateInspectorSpecialties(
-  id: number,
-  specialties: SpecialtyPermissions
-): Promise<Inspector> {
-  if (USE_MOCK_DATA) {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const { getMockInspectorById, mockInspectors } = await import('@/lib/mock-data/inspectors')
-    const inspector = getMockInspectorById(id)
-    if (!inspector) {
-      throw new Error(`Inspector with ID ${id} not found`)
-    }
-    
-    // Convert SpecialtyPermissions to SpecialtyCode array
-    const newSpecialties: SpecialtyCode[] = []
-    if (specialties.PSV) newSpecialties.push('PSV')
-    if (specialties.CRANE) newSpecialties.push('CRANE')
-    if (specialties.CORROSION) newSpecialties.push('CORROSION')
-    
-    // Update the mock inspector
-    const updatedInspector = {
-      ...inspector,
-      specialties: newSpecialties,
-      updatedAt: new Date().toISOString()
-    }
-    
-    return updatedInspector
-  }
-
-  const response = await adminApiPut<AdminApiResponse<Inspector>>(
-    `/inspectors/${id}/specialties`,
-    specialties
-  )
-  return response.data
-}
+// updateInspectorSpecialties function removed - specialties system deprecated
 
 /**
  * Toggle inspector active status

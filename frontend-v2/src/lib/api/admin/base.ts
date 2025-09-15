@@ -3,6 +3,7 @@
  */
 
 import { AdminApiError, AdminApiResponse, AdminPaginatedResponse } from '@/types/admin'
+import { authService } from '@/lib/auth'
 
 // Base API configuration
 export const ADMIN_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -53,8 +54,12 @@ export async function adminApiRequest<T>(
 ): Promise<T> {
   const url = `${ADMIN_API_BASE_URL}${ADMIN_API_PREFIX}${endpoint}`
   
-  // Get auth token from localStorage or context
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  // Get auth token from authService (consistent with authentication system)
+  const token = authService.getToken()
+  
+  if (!token && process.env.NODE_ENV === 'development') {
+    console.warn('🚨 No authentication token available for admin API request:', endpoint)
+  }
   
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
@@ -74,19 +79,54 @@ export async function adminApiRequest<T>(
     return await handleAdminAPIResponse<T>(response)
   } catch (error) {
     if (error instanceof AdminAPIError) {
+      // Log specific admin API errors for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.error('🚨 AdminAPIError:', {
+          endpoint,
+          status: error.status,
+          message: error.message,
+          code: error.code,
+          hasToken: !!token
+        })
+      }
       throw error
     }
     // Handle network errors or other unexpected errors
-    throw new AdminAPIError(
+    const networkError = new AdminAPIError(
       error instanceof Error ? error.message : 'An unexpected error occurred',
       0,
       'NETWORK_ERROR'
     )
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.error('🚨 Network/Unexpected Error:', {
+        endpoint,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        hasToken: !!token
+      })
+    }
+    
+    throw networkError
   }
 }
 
 // Utility function for GET requests
 export async function adminApiGet<T>(endpoint: string): Promise<T> {
+  return adminApiRequest<T>(endpoint, { method: 'GET' })
+}
+
+// Utility function for authenticated GET requests with better error messages
+export async function adminApiGetAuthenticated<T>(endpoint: string): Promise<T> {
+  const token = authService.getToken()
+  
+  if (!token) {
+    throw new AdminAPIError(
+      'Authentication required. Please login to access admin features.',
+      401,
+      'NO_AUTH_TOKEN'
+    )
+  }
+  
   return adminApiRequest<T>(endpoint, { method: 'GET' })
 }
 
@@ -143,7 +183,7 @@ export async function adminApiUpload<T>(
     })
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  const token = authService.getToken()
   
   return adminApiRequest<T>(endpoint, {
     method: 'POST',

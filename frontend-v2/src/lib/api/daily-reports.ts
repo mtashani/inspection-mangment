@@ -35,7 +35,7 @@ class ApiClient {
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
     // Get auth token from localStorage or auth context
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('access_token')
     
     return {
       'Content-Type': 'application/json',

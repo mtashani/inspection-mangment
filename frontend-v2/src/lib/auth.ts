@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { logAuthError, logApiError } from '@/lib/error-logger';
 import { shouldUseMockData, devInfo } from '@/lib/utils/development';
+import { transformInspectorToUser, extractPermissionsFromToken } from './auth-utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -11,18 +12,23 @@ export interface LoginCredentials {
 
 export interface User {
   id: number;
-  username: string;
+  username: string | null;
   email: string;
-  name: string;
+  name: string; // This comes from backend as computed field (first_name + last_name)
   roles: string[];
   is_active: boolean;
   employee_id: string;
-  avatar?: string; // Optional avatar URL
-  // Additional inspector-specific fields
-  department?: string;
-  position?: string;
-  certification_level?: string;
-  phone?: string;
+  
+  // Optional fields that might be included in the response
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
+  profile_image_url?: string | null;
+  active?: boolean;
+  can_login?: boolean;
+  
+  // For backward compatibility
+  avatar?: string; // alias for profile_image_url
 }
 
 export interface AuthResponse {
@@ -76,9 +82,16 @@ class AuthService {
         document.cookie = `access_token=${access_token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
       }
 
-      // Get user info
+      // Get user info and extract permissions from token
       const user = await this.getCurrentUser();
-      return user;
+      
+      // Extract permissions from token and merge with user data
+      const tokenData = extractPermissionsFromToken(access_token);
+      return {
+        ...user,
+        roles: tokenData.roles.length > 0 ? tokenData.roles : user.roles,
+        permissions: tokenData.permissions,
+      };
     } catch (error) {
       // Log the error for debugging
       logAuthError(error instanceof Error ? error : 'Unknown login error', 'login');
@@ -112,14 +125,24 @@ class AuthService {
     }
 
     try {
-      const response = await axios.get<User>(`${API_BASE_URL}/api/v1/auth/me`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },
         withCredentials: true,
       });
 
-      return response.data;
+      // Transform backend response to frontend User format
+      const user = transformInspectorToUser(response.data);
+      
+      // Extract permissions from current token if available
+      if (this.token) {
+        const tokenData = extractPermissionsFromToken(this.token);
+        user.roles = tokenData.roles.length > 0 ? tokenData.roles : user.roles;
+        (user as any).permissions = tokenData.permissions;
+      }
+      
+      return user;
     } catch (error) {
       // Only log authentication errors for non-401 errors or in production
       if (axios.isAxiosError(error)) {

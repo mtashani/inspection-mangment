@@ -3,9 +3,7 @@
  * Comprehensive type definitions for the admin panel functionality
  */
 
-// Base types
-export type InspectorType = 'INTERNAL' | 'EXTERNAL' | 'CONTRACTOR'
-export type SpecialtyCode = 'PSV' | 'CRANE' | 'CORROSION'
+// Base types - specialties and inspector types removed as they're no longer used
 export type AttendanceStatus = 'WORKING' | 'RESTING' | 'OVERTIME' | 'ABSENT' | 'SICK_LEAVE' | 'VACATION'
 export type WorkCycleType = 'CONTINUOUS' | 'SHIFT_BASED' | 'CUSTOM'
 export type ReportType = 'PSV' | 'CRANE' | 'CORROSION' | 'GENERAL' | 'MAINTENANCE'
@@ -23,33 +21,13 @@ export const AttendanceStatus = {
   VACATION: 'VACATION' as const,
 } as const
 
-export const InspectorType = {
-  mechanical: 'mechanical' as const,
-  corrosion: 'corrosion' as const,
-  ndt: 'ndt' as const,
-  electrical: 'electrical' as const,
-  instrumentation: 'instrumentation' as const,
-  civil: 'civil' as const,
-  general: 'general' as const,
-  psv_operator: 'psv_operator' as const,
-  lifting_equipment_operator: 'lifting_equipment_operator' as const,
-} as const
-
-export const SpecialtyCode = {
-  PSV: 'PSV' as const,
-  CRANE: 'CRANE' as const,
-  CORROSION: 'CORROSION' as const,
-} as const
+// InspectorType and SpecialtyCode constants removed - no longer used
 
 // Dashboard Statistics
 export interface AdminDashboardStats {
   totalInspectors: number
   activeInspectors: number
-  specialtyCounts: {
-    psv: number
-    crane: number
-    corrosion: number
-  }
+  // specialtyCounts removed - no longer used
   upcomingBirthdays: number
   attendanceOverview: {
     presentToday: number
@@ -68,16 +46,14 @@ export interface Inspector {
   id: number
   firstName: string
   lastName: string
+  name: string  // Computed field for backward compatibility
   employeeId: string
   nationalId: string
   email: string
   phone?: string
-  department?: string
   dateOfBirth?: string
   birthPlace?: string
   maritalStatus?: string
-  inspectorType: InspectorType
-  specialties: SpecialtyCode[]
   // Education
   educationDegree?: string
   educationField?: string
@@ -96,10 +72,9 @@ export interface Inspector {
   overtimeMultiplier?: number
   nightShiftMultiplier?: number
   onCallMultiplier?: number
-  // Other
-  workCycle?: WorkCycle
+  // Profile
   profileImageUrl?: string
-  notes?: string
+  // Timestamps
   createdAt: string
   updatedAt: string
   lastLoginAt?: string
@@ -112,12 +87,9 @@ export interface InspectorFormData {
   nationalId: string
   email: string
   phone?: string
-  department?: string
   dateOfBirth?: string
   birthPlace?: string
   maritalStatus?: string
-  inspectorType: InspectorType
-  specialties: SpecialtyCode[]
   // Education
   educationDegree?: string
   educationField?: string
@@ -132,30 +104,18 @@ export interface InspectorFormData {
   password?: string
   canLogin: boolean
   attendanceTrackingEnabled: boolean
-  workCycleStartDate?: string
-  workCycleType?: string
   // Payroll
   baseHourlyRate?: number
   overtimeMultiplier?: number
   nightShiftMultiplier?: number
   onCallMultiplier?: number
-  // Other
-  workCycle?: WorkCycleData
-  notes?: string
 }
 
 export interface InspectorFilters {
   search?: string
-  inspectorType?: InspectorType
-  specialties?: SpecialtyCode[]
   active?: boolean
   canLogin?: boolean
-}
-
-export interface SpecialtyPermissions {
-  PSV: boolean
-  CRANE: boolean
-  CORROSION: boolean
+  yearsExperience?: { min?: number; max?: number }
 }
 
 // Attendance Management
@@ -503,8 +463,7 @@ export interface AdminAnalytics {
   inspectorStats: {
     totalActive: number
     totalInactive: number
-    bySpecialty: Record<SpecialtyCode, number>
-    byType: Record<InspectorType, number>
+    // bySpecialty and byType removed - no longer used
     recentlyAdded: number
   }
   attendanceStats: {

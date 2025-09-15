@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional, List
 from sqlmodel import Session
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 from app.domains.inspector.services.analytics_service import AnalyticsService
 from app.domains.inspector.schemas.analytics import (
     AttendanceOverviewResponse,
@@ -19,7 +19,7 @@ router = APIRouter()
 async def get_attendance_overview(
     timeframe: str = Query("current_month", description="Time period: current_month, last_30_days, current_week"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get comprehensive inspector attendance overview analytics.
@@ -43,7 +43,7 @@ async def get_attendance_trends(
     jalali_year: int = Query(..., description="Jalali year for trend analysis"),
     jalali_month: int = Query(..., description="Jalali month (1-12) for trend analysis"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Calculate inspector attendance trends for a specific Jalali month.
@@ -68,7 +68,7 @@ async def get_performance_metrics(
     inspector_ids: Optional[List[int]] = Query(None, description="Specific inspector IDs to analyze"),
     timeframe: str = Query("current_month", description="Analysis period: current_month, last_30_days"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get performance metrics for inspectors.
@@ -91,7 +91,7 @@ async def get_performance_metrics(
 async def get_automated_insights(
     timeframe: str = Query("current_month", description="Analysis period: current_month, last_30_days"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Generate AI-like insights and recommendations based on inspector attendance patterns.
@@ -117,7 +117,7 @@ async def get_period_comparison(
     jalali_year_2: int = Query(..., description="Second period Jalali year"),
     jalali_month_2: int = Query(..., description="Second period Jalali month"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Compare inspector attendance data between two Jalali months.
@@ -172,7 +172,7 @@ async def get_chart_data(
     chart_type: str = Query(..., description="Type of chart: weekly_trends, monthly_distribution, department_comparison"),
     timeframe: str = Query("current_month", description="Analysis period"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get chart data for inspector attendance analytics visualization.
@@ -199,7 +199,7 @@ async def get_chart_data(
 async def get_key_performance_indicators(
     timeframe: str = Query("current_month", description="Analysis period"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get key performance indicators for inspector attendance.

@@ -255,7 +255,7 @@ export function AttendanceOverride({
               <div>
                 <p className="font-medium">{inspector.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {inspector.employeeId} • {inspector.specialties.join(', ')}
+                  {inspector.employeeId}
                 </p>
               </div>
             </div>

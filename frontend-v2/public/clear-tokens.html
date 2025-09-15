@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear JWT Tokens</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔧 Clear JWT Tokens</h2>
+        <div class="warning">
+            <strong>⚠️ Important:</strong> The JWT secret was changed in the backend. Old tokens are now invalid and causing authentication issues.
+        </div>
+        
+        <div class="info">
+            <strong>What this does:</strong><br>
+            Clears all stored authentication tokens so you can get fresh ones that work with the updated system.
+        </div>
+        
+        <button onclick="clearAllTokens()">🗑️ Clear All Tokens</button>
+        <button onclick="clearAndGoToLogin()">🔄 Clear Tokens & Go to Login</button>
+        
+        <div id="success" class="success">
+            ✅ All tokens cleared successfully! 
+        </div>
+        
+        <h3>📋 What will be cleared:</h3>
+        <ul>
+            <li><strong>localStorage:</strong> access_token, token, auth_token, jwt_token, user data</li>
+            <li><strong>sessionStorage:</strong> all auth-related data</li>
+            <li><strong>Cookies:</strong> access_token, auth_token, jwt_token</li>
+            <li><strong>Any other authentication data</strong></li>
+        </ul>
+        
+        <h3>🔐 After clearing tokens:</h3>
+        <ol>
+            <li>Click "Clear Tokens & Go to Login" button above</li>
+            <li>Log in with: <strong>username: admin, password: admin123</strong></li>
+            <li>Try accessing the admin panel again</li>
+        </ol>
+
+        <div id="tokenStatus" style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            <h4>Current Token Status:</h4>
+            <div id="currentTokens"></div>
+        </div>
+    </div>
+
+    <script>
+        // Show current token status
+        function showCurrentTokens() {
+            const tokenKeys = ['access_token', 'token', 'auth_token', 'jwt_token', 'user', 'userInfo'];
+            const currentTokens = document.getElementById('currentTokens');
+            let tokenInfo = '';
+            
+            tokenKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    const truncated = value.length > 50 ? value.substring(0, 50) + '...' : value;
+                    tokenInfo += `<div><strong>${key}:</strong> ${truncated}</div>`;
+                }
+            });
+            
+            if (tokenInfo === '') {
+                tokenInfo = '<div style="color: green;">✅ No tokens found in localStorage</div>';
+            }
+            
+            currentTokens.innerHTML = tokenInfo;
+        }
+
+        function clearAllTokens() {
+            let clearedCount = 0;
+            
+            // Clear localStorage
+            const localStorageKeys = [
+                'access_token', 'token', 'auth_token', 'jwt_token', 
+                'user', 'userInfo', 'authUser', 'userData',
+                'refresh_token', 'id_token', 'NEXT_PUBLIC_TOKEN_STORAGE_KEY'
+            ];
+            
+            localStorageKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    clearedCount++;
+                    console.log(`✅ Cleared localStorage: ${key}`);
+                }
+            });
+            
+            // Clear sessionStorage
+            const sessionStorageKeys = [
+                'access_token', 'token', 'auth_token', 'jwt_token',
+                'user', 'userInfo', 'authUser', 'userData',
+                'refresh_token', 'id_token'
+            ];
+            
+            sessionStorageKeys.forEach(key => {
+                if (sessionStorage.getItem(key)) {
+                    sessionStorage.removeItem(key);
+                    clearedCount++;
+                    console.log(`✅ Cleared sessionStorage: ${key}`);
+                }
+            });
+            
+            // Clear cookies
+            const cookiesToClear = [
+                'access_token', 'auth_token', 'jwt_token', 'token',
+                'refresh_token', 'id_token'
+            ];
+            
+            cookiesToClear.forEach(cookieName => {
+                // Clear for current domain
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                // Clear for localhost
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+                // Clear for all paths
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.localhost;`;
+                console.log(`✅ Cleared cookie: ${cookieName}`);
+            });
+            
+            console.log(`🎉 Cleared ${clearedCount} tokens and auth data!`);
+            document.getElementById('success').style.display = 'block';
+            
+            // Update token status display
+            setTimeout(showCurrentTokens, 500);
+        }
+        
+        function clearAndGoToLogin() {
+            clearAllTokens();
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+        }
+        
+        // Show current tokens on page load
+        showCurrentTokens();
+        
+        // Log current storage state to console
+        console.log('Current localStorage keys:', Object.keys(localStorage));
+        console.log('Current sessionStorage keys:', Object.keys(sessionStorage));
+        console.log('Current cookies:', document.cookie);
+    </script>
+</body>
+</html>

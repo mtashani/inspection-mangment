@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/contexts/auth-context';
+import { PermissionProvider } from '@/contexts/permission-context';
 import { AuthGuard } from '@/components/auth-guard';
 import { QueryProvider } from '@/components/query-provider';
 import { PerformanceMonitor } from '@/components/performance-monitor';
@@ -69,11 +70,13 @@ export default function RootLayout({
             >
               <URLStateProvider debug={process.env.NODE_ENV === 'development'}>
                 <AuthProvider>
-                  <RealTimeNotificationsProvider>
-                    <AuthGuard>
-                      <RealTimeLayout>{children}</RealTimeLayout>
-                    </AuthGuard>
-                  </RealTimeNotificationsProvider>
+                  <PermissionProvider>
+                    <RealTimeNotificationsProvider>
+                      <AuthGuard>
+                        <RealTimeLayout>{children}</RealTimeLayout>
+                      </AuthGuard>
+                    </RealTimeNotificationsProvider>
+                  </PermissionProvider>
                 </AuthProvider>
               </URLStateProvider>
             </ThemeProvider>

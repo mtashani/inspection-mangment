@@ -54,7 +54,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
-import { Inspector, InspectorFormData, InspectorType, SpecialtyCode } from '@/types/admin'
+import { Inspector, InspectorFormData, InspectorType } from '@/types/admin'
 import { inspectorFormSchema } from '@/lib/validation/admin'
 import { createInspector, updateInspector } from '@/lib/api/admin/inspectors'
 
@@ -127,23 +127,7 @@ const departmentOptions = [
   'Maintenance'
 ]
 
-const specialtyOptions: { value: SpecialtyCode; label: string; description: string }[] = [
-  {
-    value: 'PSV',
-    label: 'PSV (Pressure Safety Valve)',
-    description: 'Pressure safety valve inspection and calibration'
-  },
-  {
-    value: 'CRANE',
-    label: 'Crane Inspection',
-    description: 'Crane and lifting equipment inspection'
-  },
-  {
-    value: 'CORROSION',
-    label: 'Corrosion Monitoring',
-    description: 'Corrosion assessment and monitoring'
-  }
-]
+// Specialty options removed - no longer needed
 
 export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormProps) {
   const router = useRouter()
@@ -169,7 +153,7 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
       birthPlace: inspector?.birthPlace || '',
       maritalStatus: inspector?.maritalStatus || undefined,
       inspectorType: inspector?.inspectorType || 'INTERNAL',
-      specialties: inspector?.specialties || [],
+      // specialties field removed - no longer used
       // Education
       educationDegree: inspector?.educationDegree || '',
       educationField: inspector?.educationField || '',
@@ -725,72 +709,7 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Badge className="w-5 h-5" />
-                      Inspector Specialties
-                    </CardTitle>
-                    <CardDescription>
-                      Professional specialties and expertise areas
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FormField
-                      control={form.control}
-                      name="specialties"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Specialties *</FormLabel>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {specialtyOptions.map((specialty) => (
-                              <FormField
-                                key={specialty.value}
-                                control={form.control}
-                                name="specialties"
-                                render={({ field }) => {
-                                  return (
-                                    <FormItem
-                                      key={specialty.value}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
-                                    >
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(specialty.value)}
-                                          onCheckedChange={(checked) => {
-                                            return checked
-                                              ? field.onChange([...field.value, specialty.value])
-                                              : field.onChange(
-                                                  field.value?.filter(
-                                                    (value) => value !== specialty.value
-                                                  )
-                                                )
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <div className="space-y-1 leading-none">
-                                        <FormLabel className="font-medium">
-                                          {specialty.label}
-                                        </FormLabel>
-                                        <FormDescription className="text-xs">
-                                          {specialty.description}
-                                        </FormDescription>
-                                      </div>
-                                    </FormItem>
-                                  )
-                                }}
-                              />
-                            ))}
-                          </div>
-                          <FormDescription>
-                            Select at least one specialty. Inspectors can have multiple specialties.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
+                {/* Inspector Specialties section removed - no longer required */}
               </div>
             </TabsContent>
 

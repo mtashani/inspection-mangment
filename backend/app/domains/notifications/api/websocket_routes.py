@@ -57,8 +57,10 @@ async def websocket_notifications_endpoint(
                 
     except Exception as e:
         logger.error(f"WebSocket connection error: {e}")
-        if websocket.client_state.CONNECTED:
+        try:
             await websocket.close(code=1011, reason="Connection error")
+        except:
+            pass  # WebSocket might already be closed
     finally:
         # Clean up the connection
         connection_manager.disconnect(websocket)

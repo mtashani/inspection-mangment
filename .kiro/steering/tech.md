@@ -1,84 +1,139 @@
 # Technology Stack
 
-## Architecture
-Full-stack web application with separate backend and frontend services.
+## Frontend (Next.js Application)
 
-## Backend Stack
-- **Framework**: FastAPI (0.104.x) with Python 3.12+
-- **Database**: SQLAlchemy 2.0+ with SQLModel, PostgreSQL primary, SQLite for development
-- **Authentication**: JWT tokens with python-jose, bcrypt for password hashing
-- **API Documentation**: Auto-generated OpenAPI/Swagger docs
-- **Testing**: pytest with httpx for API testing
-- **Code Quality**: black, flake8, isort, mypy, pre-commit hooks
+### Core Technologies
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript 5+ (strict mode)
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS 3.4+ with shadcn/ui components
+- **State Management**: React Query (@tanstack/react-query) + Context API
+- **Forms**: React Hook Form + Zod validation
+- **Authentication**: JWT with jose library
+- **Date Handling**: date-fns + jalaali-js (Persian calendar support)
 
-## Frontend Stack
-- **Framework**: Next.js 15+ with React 19
-- **Language**: TypeScript 5.7+ with strict mode enabled
-- **Type Safety**: No `any` types allowed - use `unknown`, specific interfaces, or generic types
-- **Styling**: Tailwind CSS 4.1+ with Radix UI components
-- **State Management**: TanStack Query (React Query) for server state
-- **Forms**: React Hook Form with Zod validation
-- **Charts**: Recharts and Chart.js with react-chartjs-2
-- **Testing**: Jest with React Testing Library
-- **Development**: Storybook for component development
+### Key Libraries
+- **UI Components**: Radix UI primitives, Lucide React icons
+- **Data Fetching**: Axios + React Query
+- **Charts**: Recharts
+- **File Processing**: xlsx for Excel exports
+- **Drag & Drop**: @dnd-kit
+- **Notifications**: Sonner
 
-## Development Tools
-- **Package Management**: npm/pnpm for frontend, pip with virtual environments for backend
-- **Database Migrations**: Alembic
-- **API Client**: httpx for backend testing
-- **Date Handling**: Jalaali calendar support (Persian dates)
+### Development Tools
+- **Testing**: Jest + React Testing Library + Playwright (E2E)
+- **Linting**: ESLint + Prettier
+- **Type Checking**: TypeScript strict mode
+- **Bundle Analysis**: @next/bundle-analyzer
+
+## Backend (FastAPI Application)
+
+### Core Technologies
+- **Framework**: FastAPI 0.104+
+- **Language**: Python 3.8+
+- **ASGI Server**: Uvicorn with standard extras
+- **Database**: SQLite (development) / PostgreSQL (production)
+- **ORM**: SQLModel + SQLAlchemy 2.0+
+- **Migrations**: Alembic
+- **Authentication**: python-jose + passlib + bcrypt
+
+### Key Libraries
+- **Validation**: Pydantic v2 + pydantic-settings
+- **Data Processing**: pandas 2.1+
+- **Date Handling**: python-dateutil + jdatetime
+- **Environment**: python-dotenv
+- **File Uploads**: python-multipart
+
+### Development Tools
+- **Testing**: pytest + httpx
+- **Code Quality**: black + flake8 + isort + mypy
+- **Pre-commit**: pre-commit hooks
 
 ## Common Commands
 
-### Backend Development
-```bash
-# Setup
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-
-# Database
-python reset_db.py              # Reset database
-python reset_and_seed_all.py    # Reset and seed with data
-alembic upgrade head             # Run migrations
-
-# Running
-uvicorn app.main:app --reload    # Development server (port 8000)
-
-# Testing
-pytest                           # Run all tests
-pytest tests/                    # Run specific test directory
-```
-
 ### Frontend Development
 ```bash
-# Setup
-npm install  # or pnpm install
-
 # Development
-npm run dev          # Development server (port 3000)
-npm run build        # Production build
-npm run start        # Production server
-npm run lint         # ESLint
-npm run test         # Jest tests
-npm run storybook    # Storybook dev server (port 6006)
+npm run dev              # Start dev server on port 3001
+npm run build            # Production build
+npm run start            # Start production server
+
+# Testing
+npm run test             # Unit tests
+npm run test:e2e         # E2E tests with Playwright
+npm run test:coverage    # Coverage report
+
+# Code Quality
+npm run lint             # ESLint check
+npm run lint:fix         # Fix ESLint issues
+npm run type-check       # TypeScript validation
+npm run format           # Prettier formatting
+
+# Docker
+npm run docker:build     # Build Docker image
+npm run docker:run       # Run container
 ```
 
-## API Documentation
-- Swagger UI: http://127.0.0.1:8000/docs
-- ReDoc: http://127.0.0.1:8000/redoc
+### Backend Development
+```bash
+# Environment Setup
+python -m venv venv
+venv\Scripts\activate    # Windows
+source venv/bin/activate # Linux/Mac
+pip install -r requirements.txt
 
-## TypeScript Best Practices
-- **Strict Mode**: Always use `"strict": true` in tsconfig.json
-- **No Any Types**: Avoid `any` - use alternatives:
-  - `unknown` for truly unknown data
-  - Specific interfaces for structured data
-  - Generic types `<T>` for reusable components
-  - Union types `string | number` for known possibilities
-- **Type Definitions**: Create proper interfaces in `src/types/`
-- **ESLint Rules**: `@typescript-eslint/no-explicit-any` enabled
+# Development
+uvicorn app.main:app --reload  # Start dev server
+python reset_db.py             # Reset database
+python reset_and_seed_all.py   # Seed with test data
+
+# Testing
+pytest                   # Run all tests
+pytest --coverage        # With coverage report
+
+# Code Quality
+black .                  # Format code
+flake8 .                # Lint check
+isort .                 # Import sorting
+mypy .                  # Type checking
+```
+
+## Architecture Patterns
+
+### Frontend Patterns
+- **Component Architecture**: Atomic design with shadcn/ui base components
+- **State Management**: Server state (React Query) + Client state (Context/useState)
+- **Error Handling**: Error boundaries + toast notifications
+- **Performance**: Code splitting, lazy loading, React.memo optimization
+- **Accessibility**: WCAG 2.1 AA compliance with proper ARIA attributes
+
+### Backend Patterns
+- **Domain-Driven Design**: Organized by business domains (RBI, inspections, etc.)
+- **Repository Pattern**: Data access abstraction
+- **Service Layer**: Business logic separation
+- **Dependency Injection**: FastAPI's built-in DI system
+- **Error Handling**: Structured exception handling with proper HTTP status codes
 
 ## Environment Configuration
-- Backend: `.env` file with database connection, JWT secrets
-- Frontend: `.env.local` for Next.js environment variables
-- Examples provided in `.env.example` files
+
+### Frontend Environment Variables
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_VERSION=v1
+NEXT_PUBLIC_APP_NAME="Inspection Management System"
+```
+
+### Backend Environment Variables
+```bash
+DATABASE_URL=sqlite:///./inspection_management.db
+SECRET_KEY=your-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+## Development Workflow
+
+1. **Code Standards**: TypeScript strict mode, ESLint rules, Prettier formatting
+2. **Testing**: Minimum 80% coverage, unit + integration + E2E tests
+3. **Git Workflow**: Feature branches, conventional commits
+4. **CI/CD**: Automated testing, type checking, and linting on PRs

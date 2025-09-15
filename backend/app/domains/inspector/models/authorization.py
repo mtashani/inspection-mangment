@@ -10,13 +10,14 @@ class Role(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True)
     description: Optional[str] = None
+    display_label: str = Field(description="Display label for UI presentation")
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships temporarily disabled
-    # permissions: List["Permission"] = Relationship(back_populates="roles")
-    # inspectors: List["Inspector"] = Relationship(back_populates="roles")
+    # Relationships
+    permissions: List["RolePermission"] = Relationship(back_populates="role")
+    inspectors: List["InspectorRole"] = Relationship(back_populates="role")
 
 
 class Permission(SQLModel, table=True):
@@ -28,12 +29,13 @@ class Permission(SQLModel, table=True):
     description: Optional[str] = None
     resource: str  # e.g., "inspectors", "psv", "calibration"
     action: str    # e.g., "create", "read", "update", "delete", "approve"
+    display_label: str = Field(description="Display label for UI presentation")
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships temporarily disabled
-    # roles: List["Role"] = Relationship(back_populates="permissions")
+    # Relationships
+    roles: List["RolePermission"] = Relationship(back_populates="permission")
 
 
 class RolePermission(SQLModel, table=True):
@@ -44,6 +46,10 @@ class RolePermission(SQLModel, table=True):
     permission_id: int = Field(foreign_key="permissions.id", primary_key=True)
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    role: Role = Relationship(back_populates="permissions")
+    permission: Permission = Relationship(back_populates="roles")
 
 
 class InspectorRole(SQLModel, table=True):

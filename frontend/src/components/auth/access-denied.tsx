@@ -1,1 +1,0 @@
-export { ModernAccessDenied as default } from './modern-access-denied'

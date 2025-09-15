@@ -9,7 +9,7 @@ from app.domains.psv.models.config import RBIConfiguration, ServiceRiskCategory
 from app.domains.inspector.models.inspector import Inspector, InspectorCertificationRecord
 from app.domains.inspector.models.authorization import Role, Permission, RolePermission, InspectorRole
 from app.domains.inspector.models.documents import InspectorDocument
-from app.domains.inspector.models.specialty import InspectorSpecialty
+
 from app.domains.corrosion.models.coupon import CorrosionCoupon
 from app.domains.corrosion.models.location import CorrosionLocation
 from app.domains.corrosion.models.analysis import CorrosionAnalysisReport

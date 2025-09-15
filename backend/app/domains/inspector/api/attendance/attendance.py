@@ -12,7 +12,7 @@ from app.domains.inspector.schemas.attendance import (
 )
 from app.domains.inspector.services.attendance_service import AttendanceService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin, require_permission, Permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ def get_all_attendance(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get all attendance records for a Jalali month (admin only).
@@ -34,7 +34,7 @@ def get_all_attendance(
 def create_attendance(
     attendance_data: AttendanceRecordCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Create an attendance record (admin only).
@@ -43,11 +43,11 @@ def create_attendance(
     record = service.create_attendance(attendance_data)
     return AttendanceRecordResponse.from_model(record)
 
-@router.get("/{attendance_id}", response_model=AttendanceRecordResponse)
+@router.get("/attendance-record/{attendance_id}", response_model=AttendanceRecordResponse)
 def get_attendance(
     attendance_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get a specific attendance record.
@@ -58,12 +58,12 @@ def get_attendance(
         raise HTTPException(status_code=404, detail="Attendance record not found.")
     return AttendanceRecordResponse.from_model(record)
 
-@router.put("/{attendance_id}", response_model=AttendanceRecordResponse)
+@router.put("/attendance-record/{attendance_id}", response_model=AttendanceRecordResponse)
 def update_attendance(
     attendance_id: int,
     attendance_data: AttendanceRecordUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Update an attendance record (admin only).
@@ -72,11 +72,11 @@ def update_attendance(
     record = service.update_attendance(attendance_id, attendance_data)
     return AttendanceRecordResponse.from_model(record)
 
-@router.delete("/{attendance_id}")
+@router.delete("/attendance-record/{attendance_id}")
 def delete_attendance(
     attendance_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Delete an attendance record (admin only).
@@ -86,34 +86,48 @@ def delete_attendance(
     return {"message": "Attendance record deleted successfully"}
 
 @router.get("/{inspector_id}", response_model=List[AttendanceRecordResponse])
-def get_inspector_attendance(
+async def get_inspector_attendance(
     inspector_id: int,
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get inspector's attendance for a Jalali month (recorded + predicted).
     Admins can view all, inspectors can only view their own.
     """
-    if current_user.is_admin or Permission.ATTENDANCE_VIEW_ALL in getattr(current_user, "permissions", []):
-        pass
-    elif current_user.id == inspector_id and Permission.ATTENDANCE_VIEW_OWN in getattr(current_user, "permissions", []):
-        pass
+    # Check if user has admin permissions or is viewing their own attendance
+    from app.domains.auth.services.permission_service import PermissionService
+    
+    has_admin_permission = await PermissionService.has_permission(
+        db, current_inspector, "admin", "manage"
+    )
+    has_attendance_view_all = await PermissionService.has_permission(
+        db, current_inspector, "attendance", "view_all"
+    )
+    has_attendance_view_own = await PermissionService.has_permission(
+        db, current_inspector, "attendance", "view_own"
+    )
+    
+    # Check authorization
+    if has_admin_permission or has_attendance_view_all:
+        pass  # Can view any inspector's attendance
+    elif current_inspector.id == inspector_id and has_attendance_view_own:
+        pass  # Can view own attendance
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view this attendance.")
+        
     service = AttendanceService(db)
     records = service.get_attendance(inspector_id, jalali_year, jalali_month)
-    if not records:
-        raise HTTPException(status_code=404, detail="Attendance not found.")
+    # Don't raise 404 if no records - return empty list or predicted data
     return [AttendanceRecordResponse.from_model(record) for record in records]
 
 @router.post("/bulk", response_model=dict)
 async def bulk_update_attendance(
     updates: List[dict] = Body(..., description="List of attendance updates"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Bulk update attendance records for multiple inspectors/dates.
@@ -165,7 +179,7 @@ async def get_attendance_summary(
     jalali_month: int = Query(..., description="Jalali month"),
     department: Optional[str] = Query(None, description="Filter by department"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get attendance summary for all inspectors in a given month.
@@ -199,7 +213,7 @@ async def get_attendance_summary(
 @router.get("/today", response_model=dict)
 async def get_today_attendance(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get today's attendance overview.
@@ -218,7 +232,7 @@ async def get_monthly_overview(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get monthly attendance overview.

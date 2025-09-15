@@ -41,9 +41,9 @@ class CorrosionAnalysisReport(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     coupon: "CorrosionCoupon" = Relationship(back_populates="analysis_reports")
-    cleaned_by: "Inspector" = Relationship(back_populates="cleaned_coupon_analyses", sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.cleaned_by_id]"})
-    analyzed_by: "Inspector" = Relationship(back_populates="analyzed_coupon_analyses", sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.analyzed_by_id]"})
-    approved_by: "Inspector" = Relationship(back_populates="approved_coupon_analyses", sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.approved_by_id]"})
+    cleaned_by: "Inspector" = Relationship(sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.cleaned_by_id]"})
+    analyzed_by: "Inspector" = Relationship(sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.analyzed_by_id]"})
+    approved_by: "Inspector" = Relationship(sa_relationship_kwargs={"foreign_keys": "[CorrosionAnalysisReport.approved_by_id]"})
 
 # Import at the end to avoid circular imports
 from app.domains.corrosion.models.coupon import CorrosionCoupon

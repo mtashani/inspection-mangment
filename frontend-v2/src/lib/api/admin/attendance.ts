@@ -322,7 +322,7 @@ export async function generateAttendanceReport(
   const response = await fetch(`/api/v1/admin/attendance/report${queryParams}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   })
   

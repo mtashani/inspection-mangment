@@ -11,13 +11,7 @@ export const inspectorImportSchema = z.object({
   email: z.string().email('Invalid email format'),
   phone: z.string().optional(),
   dateOfBirth: z.string().optional(),
-  inspectorType: z.enum(['INTERNAL', 'EXTERNAL', 'CONTRACTOR'], {
-    errorMap: () => ({ message: 'Inspector type must be INTERNAL, EXTERNAL, or CONTRACTOR' })
-  }),
-  specialties: z.string().optional().transform((val) => {
-    if (!val) return []
-    return val.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0)
-  }),
+  // inspectorType and specialties removed - no longer used
   active: z.union([z.boolean(), z.string()]).transform((val) => {
     if (typeof val === 'boolean') return val
     if (typeof val === 'string') {
@@ -138,20 +132,7 @@ export function validateInspectorData(data: unknown[], options: { skipFirstRow?:
     try {
       const validatedRow = inspectorImportSchema.parse(row)
       
-      // Additional business logic validation
-      if (validatedRow.specialties) {
-        const validSpecialties = ['PSV', 'CRANE', 'CORROSION']
-        const invalidSpecialties = validatedRow.specialties.filter(s => !validSpecialties.includes(s))
-        if (invalidSpecialties.length > 0) {
-          errors.push({
-            row: rowNumber,
-            field: 'specialties',
-            message: `Invalid specialties: ${invalidSpecialties.join(', ')}. Valid options: ${validSpecialties.join(', ')}`,
-            value: validatedRow.specialties
-          })
-          continue
-        }
-      }
+      // Additional business logic validation removed - no longer validates specialties
 
       validData.push(validatedRow)
     } catch (error) {

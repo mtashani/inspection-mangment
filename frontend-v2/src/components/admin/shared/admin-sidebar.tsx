@@ -60,10 +60,7 @@ const adminData = {
           title: 'Create Inspector',
           url: '/admin/inspectors/create',
         },
-        {
-          title: 'Specialties',
-          url: '/admin/inspectors/specialties',
-        },
+        // Specialties management removed - no longer applicable
       ],
     },
     {

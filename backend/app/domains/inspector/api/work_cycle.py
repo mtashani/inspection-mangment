@@ -9,7 +9,7 @@ from app.domains.inspector.schemas.work_cycle import (
 )
 from app.domains.inspector.services.work_cycle_service import WorkCycleService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ router = APIRouter()
 def get_work_cycles(
     inspector_id: int = Query(..., description="Inspector ID"),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
     """
     Get work cycles for an inspector. Admins can view all, inspectors only their own.
@@ -31,7 +31,7 @@ def create_work_cycle(
     work_cycle_data: WorkCycleCreate,
     inspector_id: int = Query(..., description="Inspector ID"),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Create a new work cycle for an inspector (admin only).
@@ -45,7 +45,7 @@ def update_work_cycle(
     cycle_id: int,
     work_cycle_data: WorkCycleUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Update a work cycle (admin only).

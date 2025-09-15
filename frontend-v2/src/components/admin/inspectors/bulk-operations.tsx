@@ -56,7 +56,6 @@ interface BulkUpdateData {
   active?: boolean
   canLogin?: boolean
   attendanceTrackingEnabled?: boolean
-  inspectorType?: string
   notes?: string
 }
 
@@ -409,9 +408,8 @@ export function BulkOperations({
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-800 mb-2">File Format Requirements:</h4>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Required columns: name, employeeId, email, inspectorType</li>
-                <li>• Optional columns: phone, specialties, active, canLogin</li>
-                <li>• Specialties should be comma-separated (PSV,CRANE,CORROSION)</li>
+                <li>• Required columns: name, employeeId, email</li>
+                <li>• Optional columns: phone, active, canLogin</li>
                 <li>• Boolean fields should be true/false or 1/0</li>
               </ul>
             </div>

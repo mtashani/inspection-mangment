@@ -1,4 +1,5 @@
-import { Inspector, AdminPaginatedResponse, SpecialtyCode, InspectorType } from '@/types/admin'
+// Inspector types and specialty codes removed - no longer used
+import { Inspector, AdminPaginatedResponse } from '@/types/admin'
 
 export const mockInspectors: Inspector[] = [
   {
@@ -13,8 +14,7 @@ export const mockInspectors: Inspector[] = [
     dateOfBirth: '1985-03-15',
     birthPlace: 'Tehran',
     maritalStatus: 'MARRIED',
-    inspectorType: 'INTERNAL' as InspectorType,
-    specialties: ['PSV', 'CRANE'] as SpecialtyCode[],
+    // inspectorType and specialties removed - no longer used
     // Education
     educationDegree: 'Bachelor of Science',
     educationField: 'Mechanical Engineering',
@@ -52,8 +52,7 @@ export const mockInspectors: Inspector[] = [
     dateOfBirth: '1990-07-22',
     birthPlace: 'Isfahan',
     maritalStatus: 'SINGLE',
-    inspectorType: 'INTERNAL' as InspectorType,
-    specialties: ['CORROSION'] as SpecialtyCode[],
+    // inspectorType and specialties removed - no longer used
     // Education
     educationDegree: 'Master of Science',
     educationField: 'Materials Engineering',
@@ -90,8 +89,7 @@ export const mockInspectors: Inspector[] = [
     dateOfBirth: '1982-11-08',
     birthPlace: 'Shiraz',
     maritalStatus: 'MARRIED',
-    inspectorType: 'CONTRACTOR' as InspectorType,
-    specialties: ['PSV', 'CORROSION'] as SpecialtyCode[],
+    // inspectorType and specialties removed - no longer used
     // Education
     educationDegree: 'Bachelor of Engineering',
     educationField: 'Chemical Engineering',
@@ -127,8 +125,7 @@ export const mockInspectors: Inspector[] = [
     dateOfBirth: '1988-05-12',
     birthPlace: 'Mashhad',
     maritalStatus: 'DIVORCED',
-    inspectorType: 'EXTERNAL' as InspectorType,
-    specialties: ['CRANE'] as SpecialtyCode[],
+    // inspectorType and specialties removed - no longer used
     // Education
     educationDegree: 'Bachelor of Science',
     educationField: 'Civil Engineering',
@@ -165,8 +162,7 @@ export const mockInspectors: Inspector[] = [
     dateOfBirth: '1975-09-30',
     birthPlace: 'Tabriz',
     maritalStatus: 'MARRIED',
-    inspectorType: 'INTERNAL' as InspectorType,
-    specialties: ['PSV', 'CRANE', 'CORROSION'] as SpecialtyCode[],
+    // inspectorType and specialties removed - no longer used
     // Education
     educationDegree: 'Master of Engineering',
     educationField: 'Petroleum Engineering',

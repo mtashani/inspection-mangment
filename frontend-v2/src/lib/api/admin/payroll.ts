@@ -243,7 +243,7 @@ export async function generatePayrollReport(
   const response = await fetch(`/api/v1/inspectors/payroll/report${queryParams}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   })
   
@@ -271,7 +271,7 @@ export async function exportPayrollData(
   const response = await fetch(`/api/v1/inspectors/payroll/export${queryParams}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
     },
   })
   

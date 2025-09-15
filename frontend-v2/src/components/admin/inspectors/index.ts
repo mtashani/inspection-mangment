@@ -1,5 +1,4 @@
 export { InspectorList } from './inspector-list'
 export { InspectorForm } from './inspector-form'
-export { SpecialtyEditor } from './specialty-editor'
 export { BulkOperations } from './bulk-operations'
 export { InspectorFiltersComponent } from './inspector-filters'

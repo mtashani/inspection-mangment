@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { UserNav } from '@/components/navigation/user-nav';
 import { Badge } from '@/components/ui/badge';
 import { Shield } from 'lucide-react';
+import { Notifications } from '@/components/navigation/notifications'; // Add this import
 
 interface AdminNavHeaderProps {
   breadcrumbs?: Array<{
@@ -74,6 +75,9 @@ export function AdminNavHeader({ breadcrumbs = [] }: AdminNavHeaderProps) {
 
       {/* Right Section - User Actions */}
       <div className="flex items-center gap-1 px-4">
+        {/* Notifications */}
+        <Notifications />
+
         {/* Theme Toggle */}
         <ThemeToggle />
 

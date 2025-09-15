@@ -95,9 +95,9 @@ const DATA_TYPE_CONFIG = {
   INSPECTORS: {
     label: 'Inspectors',
     icon: Users,
-    description: 'Import/export inspector data including personal info, specialties, and settings',
-    requiredColumns: ['name', 'employeeId', 'email', 'inspectorType'],
-    optionalColumns: ['phone', 'specialties', 'active', 'canLogin', 'attendanceTrackingEnabled']
+    description: 'Import/export inspector data including personal info and settings',
+    requiredColumns: ['name', 'employeeId', 'email'],
+    optionalColumns: ['phone', 'active', 'canLogin', 'attendanceTrackingEnabled']
   },
   ATTENDANCE: {
     label: 'Attendance Records',

@@ -12,7 +12,7 @@ from app.domains.inspector.schemas.attendance import (
 )
 from app.domains.inspector.services.attendance_service import AttendanceService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin, require_permission, Permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 
 router = APIRouter()
 
@@ -22,16 +22,28 @@ def get_inspector_attendance(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
-    """
-    Get inspector's attendance for a Jalali month (recorded + predicted).
-    Admins can view all, inspectors can only view their own.
-    """
-    if current_user.is_admin or Permission.ATTENDANCE_VIEW_ALL in getattr(current_user, "permissions", []):
-        pass
-    elif current_user.id == inspector_id and Permission.ATTENDANCE_VIEW_OWN in getattr(current_user, "permissions", []):
-        pass
+    """Get inspector's attendance for a Jalali month."""
+    # Check permissions using the RBAC system
+    from app.domains.auth.services.permission_service import PermissionService
+    import asyncio
+    
+    has_admin_permission = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "admin", "manage"
+    ))
+    has_attendance_view_all = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "attendance", "view_all"
+    ))
+    has_attendance_view_own = asyncio.run(PermissionService.has_permission(
+        db, current_inspector, "attendance", "view_own"
+    ))
+    
+    # Check authorization
+    if has_admin_permission or has_attendance_view_all:
+        pass  # Can view any inspector's attendance
+    elif current_inspector.id == inspector_id and has_attendance_view_own:
+        pass  # Can view own attendance
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view this attendance.")
     service = AttendanceService(db)
@@ -45,7 +57,7 @@ def create_or_update_attendance(
     inspector_id: int,
     attendance_data: AttendanceRecordCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Create or update an attendance record for a specific day (admin only).
@@ -59,7 +71,7 @@ def generate_attendance_for_work_cycle(
     inspector_id: int,
     work_cycle_id: int = Query(...),
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Generate attendance records automatically for a work cycle (admin only).
@@ -73,11 +85,23 @@ def get_leave_requests(
     inspector_id: int,
     status: Optional[LeaveRequestStatus] = Query(None),
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
-    """
-    Get leave requests for an inspector. Admins can view all, inspectors only their own.
-    """
+    """Get leave requests for an inspector."""
+    # Check permissions: inspector can view own requests or needs admin permission
+    if current_inspector.id != inspector_id:
+        from app.domains.auth.services.permission_service import PermissionService
+        import asyncio
+        
+        has_admin = asyncio.run(PermissionService.has_permission(
+            db, current_inspector, "admin", "manage"
+        ))
+        
+        if not has_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to view other inspectors' leave requests"
+            )
     service = AttendanceService(db)
     leaves = service.get_leave_requests(inspector_id, status)
     return leaves
@@ -87,11 +111,23 @@ def create_leave_request(
     inspector_id: int,
     leave_request_data: LeaveRequestCreate,
     db: Session = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_inspector = Depends(get_current_active_inspector)
 ):
-    """
-    Create a leave request (inspector only).
-    """
+    """Create a leave request."""
+    # Check permissions: inspector can only create own requests or needs admin permission
+    if current_inspector.id != inspector_id:
+        from app.domains.auth.services.permission_service import PermissionService
+        import asyncio
+        
+        has_admin = asyncio.run(PermissionService.has_permission(
+            db, current_inspector, "admin", "manage"
+        ))
+        
+        if not has_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Can only create leave requests for yourself"
+            )
     service = AttendanceService(db)
     leave = service.create_leave_request(inspector_id, leave_request_data)
     return leave
@@ -100,14 +136,14 @@ def create_leave_request(
 def approve_leave_request(
     request_id: int,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Approve a leave request (admin only). Automatically updates attendance days.
     """
     service = AttendanceService(db)
-    # TODO: Pass approver_id from current_user
-    leave = service.approve_leave_request(request_id, approver_id=1)
+    # TODO: Pass approver_id from current_inspector
+    leave = service.approve_leave_request(request_id, approver_id=current_inspector.id)
     return leave
 
 @router.put("/leave-requests/{request_id}/reject", response_model=LeaveRequestResponse)
@@ -115,7 +151,7 @@ def reject_leave_request(
     request_id: int,
     reason: str,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Reject a leave request (admin only).
@@ -129,7 +165,7 @@ def override_attendance_day(
     inspector_id: int,
     override_data: AttendanceRecordUpdate,
     db: Session = Depends(get_session),
-    current_user=Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Override attendance for a specific day (admin only).
@@ -139,7 +175,28 @@ def override_attendance_day(
     return AttendanceRecordResponse.from_model(record)
 
 @router.get("/inspectors/{inspector_id}/monthly-attendance/{jalali_year}/{jalali_month}", response_model=MonthlyAttendanceResponse)
-def get_or_generate_monthly_attendance(inspector_id: int, jalali_year: int, jalali_month: int, db: Session = Depends(get_session)):
+def get_or_generate_monthly_attendance(
+    inspector_id: int, 
+    jalali_year: int, 
+    jalali_month: int, 
+    db: Session = Depends(get_session),
+    current_inspector = Depends(get_current_active_inspector)
+):
+    """Get monthly attendance for an inspector."""
+    # Check permissions: inspector can view own attendance or needs admin permission
+    if current_inspector.id != inspector_id:
+        from app.domains.auth.services.permission_service import PermissionService
+        import asyncio
+        
+        has_admin = asyncio.run(PermissionService.has_permission(
+            db, current_inspector, "admin", "manage"
+        ))
+        
+        if not has_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to view other inspectors' attendance"
+            )
     service = AttendanceService(db)
     monthly = service.generate_monthly_attendance(inspector_id, jalali_year, jalali_month)
     if not monthly:
@@ -153,7 +210,8 @@ def update_monthly_attendance_day(
     jalali_month: int,
     day: int,
     data: dict = Body(...),
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     service = AttendanceService(db)
     monthly = service.generate_monthly_attendance(inspector_id, jalali_year, jalali_month)
@@ -180,7 +238,7 @@ def update_monthly_attendance_day(
 async def bulk_update_attendance(
     updates: List[dict] = Body(..., description="List of attendance updates"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Bulk update attendance records for multiple inspectors/dates.
@@ -231,7 +289,7 @@ async def bulk_update_attendance(
 async def bulk_import_attendance(
     import_data: dict = Body(..., description="Bulk import data with inspectors and records"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Bulk import attendance data from file upload or API.
@@ -320,7 +378,7 @@ async def bulk_import_attendance(
 async def bulk_generate_attendance(
     generation_request: dict = Body(..., description="Bulk generation parameters"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Bulk generate attendance records for multiple inspectors based on their work cycles.
@@ -401,7 +459,7 @@ async def get_attendance_summary(
     jalali_month: int = Query(..., description="Jalali month"),
     department: Optional[str] = Query(None, description="Filter by department"),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get attendance summary for all inspectors in a given month.

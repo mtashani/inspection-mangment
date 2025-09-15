@@ -11,17 +11,31 @@ class InspectorCreateRequest(BaseModel):
     employee_id: str = Field(..., min_length=1, max_length=50)
     national_id: str = Field(..., min_length=10, max_length=10)
     email: str
-    inspector_type: InspectorType
     phone: Optional[str] = Field(None, max_length=20)
-    department: Optional[str] = Field(None, max_length=100)
     years_experience: int = Field(..., ge=0, le=50)
     date_of_birth: Optional[date] = None
-    specialties: Optional[List[str]] = Field(default_factory=list)
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     password: Optional[str] = Field(None, min_length=6)
     can_login: bool = Field(default=False)
     active: bool = Field(default=True)
     attendance_tracking_enabled: bool = Field(default=False)
+    
+    # Educational Information
+    education_degree: Optional[str] = None
+    education_field: Optional[str] = None
+    education_institute: Optional[str] = None
+    graduation_year: Optional[int] = None
+    
+    # Profile information
+    birth_place: Optional[str] = None
+    profile_image_url: Optional[str] = None
+    marital_status: Optional[str] = None
+    
+    # Payroll information
+    base_hourly_rate: Optional[float] = None
+    overtime_multiplier: Optional[float] = None
+    night_shift_multiplier: Optional[float] = None
+    on_call_multiplier: Optional[float] = None
 
     @field_validator('email')
     @classmethod
@@ -44,12 +58,9 @@ class InspectorResponse(BaseModel):
     employee_id: str
     national_id: str
     email: str
-    inspector_type: str
     phone: Optional[str] = None
-    department: Optional[str] = None
     years_experience: int
     date_of_birth: Optional[date] = None
-    specialties: List[str]
     active: bool
     can_login: bool
     username: Optional[str] = None
@@ -63,6 +74,16 @@ class InspectorResponse(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     
+    # Educational Information
+    education_degree: Optional[str] = None
+    education_field: Optional[str] = None
+    education_institute: Optional[str] = None
+    graduation_year: Optional[int] = None
+    
+    # Profile information
+    birth_place: Optional[str] = None
+    marital_status: Optional[str] = None
+    
     @classmethod
     def from_model(cls, inspector):
         """Create response from Inspector model"""
@@ -74,12 +95,9 @@ class InspectorResponse(BaseModel):
             employee_id=inspector.employee_id,
             national_id=inspector.national_id,
             email=inspector.email,
-            inspector_type=inspector.inspector_type.value if hasattr(inspector.inspector_type, 'value') else str(inspector.inspector_type),
             phone=inspector.phone,
-            department=inspector.department,
             years_experience=inspector.years_experience,
             date_of_birth=inspector.date_of_birth,
-            specialties=inspector.specialties or [],
             active=inspector.active,
             can_login=inspector.can_login,
             username=inspector.username,
@@ -91,7 +109,13 @@ class InspectorResponse(BaseModel):
             on_call_multiplier=getattr(inspector, 'on_call_multiplier', None),
             last_login=inspector.last_login,
             created_at=inspector.created_at,
-            updated_at=inspector.updated_at
+            updated_at=inspector.updated_at,
+            education_degree=getattr(inspector, 'education_degree', None),
+            education_field=getattr(inspector, 'education_field', None),
+            education_institute=getattr(inspector, 'education_institute', None),
+            graduation_year=getattr(inspector, 'graduation_year', None),
+            birth_place=getattr(inspector, 'birth_place', None),
+            marital_status=getattr(inspector, 'marital_status', None)
         )
 
     class Config:

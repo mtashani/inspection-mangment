@@ -6,7 +6,7 @@ from sqlmodel import Session
 from io import BytesIO
 import json
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_user, require_admin
+from app.domains.auth.dependencies import get_current_active_inspector, require_permission
 from app.domains.inspector.services.reporting_service import ReportingService
 from app.domains.inspector.schemas.reports import (
     AttendanceReportResponse,
@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get("", response_model=List[dict])
 async def list_available_reports(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     List all available inspector attendance reports.
@@ -58,7 +58,7 @@ async def list_available_reports(
 async def generate_attendance_report(
     filters: ReportFilters,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Generate comprehensive inspector attendance report based on filters.
@@ -78,7 +78,7 @@ async def get_specific_report(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get a specific inspector attendance report by ID.
@@ -123,7 +123,7 @@ async def get_specific_report(
 async def export_attendance_data(
     export_request: ExportRequest,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Export inspector attendance data in specified format (CSV, Excel, PDF, JSON).
@@ -169,7 +169,7 @@ async def export_attendance_data(
 async def bulk_export_attendance_data(
     bulk_request: BulkExportRequest,
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Bulk export multiple inspector attendance report types in specified format.
@@ -245,7 +245,7 @@ async def bulk_export_attendance_data(
 @router.get("/formats", response_model=AvailableFormatsResponse)
 async def get_available_formats(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get list of supported export formats and their capabilities.
@@ -280,7 +280,7 @@ async def get_available_formats(
 @router.get("/templates")
 async def get_report_templates(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get predefined report templates for common inspector attendance use cases.
@@ -351,7 +351,7 @@ async def get_report_templates(
 async def schedule_recurring_report(
     schedule_data: dict = Body(...),
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Schedule a recurring inspector attendance report.
@@ -372,7 +372,7 @@ async def schedule_recurring_report(
 @router.get("/scheduled")
 async def get_scheduled_reports(
     db: Session = Depends(get_session),
-    current_user = Depends(require_admin)
+    current_inspector = Depends(require_permission("admin", "manage"))
 ):
     """
     Get list of scheduled recurring inspector attendance reports.

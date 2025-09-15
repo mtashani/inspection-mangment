@@ -57,7 +57,7 @@ describe('InspectorList', () => {
     expect(screen.getByText('Inspector')).toBeInTheDocument()
     expect(screen.getByText('Employee ID')).toBeInTheDocument()
     expect(screen.getByText('Type')).toBeInTheDocument()
-    expect(screen.getByText('Specialties')).toBeInTheDocument()
+    // Specialties header removed - no longer applicable
     expect(screen.getByText('Status')).toBeInTheDocument()
     expect(screen.getByText('Login')).toBeInTheDocument()
     expect(screen.getByText('Actions')).toBeInTheDocument()

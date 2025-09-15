@@ -16,11 +16,7 @@ const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 const mockDashboardStats: AdminDashboardStats = {
   totalInspectors: 45,
   activeInspectors: 42,
-  specialtyCounts: {
-    psv: 18,
-    crane: 15,
-    corrosion: 12
-  },
+  // specialtyCounts removed - no longer used
   upcomingBirthdays: 3,
   attendanceOverview: {
     presentToday: 38,
@@ -38,11 +34,7 @@ const mockDashboardStats: AdminDashboardStats = {
 const emptyDashboardStats: AdminDashboardStats = {
   totalInspectors: 0,
   activeInspectors: 0,
-  specialtyCounts: {
-    psv: 0,
-    crane: 0,
-    corrosion: 0
-  },
+  // specialtyCounts removed - no longer used
   upcomingBirthdays: 0,
   attendanceOverview: {
     presentToday: 0,
@@ -62,8 +54,7 @@ const mockInspectors: Inspector[] = [
     name: 'Ahmad Rezaei',
     employeeId: 'EMP001',
     email: 'ahmad.rezaei@company.com',
-    inspectorType: 'INTERNAL',
-    specialties: ['PSV', 'CRANE'],
+    // inspectorType and specialties removed - no longer used
     active: true,
     canLogin: true,
     attendanceTrackingEnabled: true,
@@ -75,8 +66,7 @@ const mockInspectors: Inspector[] = [
     name: 'Maryam Hosseini',
     employeeId: 'EMP002',
     email: 'maryam.hosseini@company.com',
-    inspectorType: 'INTERNAL',
-    specialties: ['CORROSION'],
+    // inspectorType and specialties removed - no longer used
     active: true,
     canLogin: true,
     attendanceTrackingEnabled: true,
@@ -88,8 +78,7 @@ const mockInspectors: Inspector[] = [
     name: 'Hassan Karimi',
     employeeId: 'EMP003',
     email: 'hassan.karimi@company.com',
-    inspectorType: 'EXTERNAL',
-    specialties: ['PSV', 'CORROSION'],
+    // inspectorType and specialties removed - no longer used
     active: true,
     canLogin: true,
     attendanceTrackingEnabled: true,

@@ -62,6 +62,6 @@ class Calibration(SQLModel, table=True):
     
     # Relationships
     psv: "PSV" = Relationship(back_populates="calibrations")
-    inspector: "Inspector" = Relationship(back_populates="psv_calibrations", sa_relationship_kwargs={"foreign_keys": "[Calibration.inspector_id]"})
-    test_operator: Optional["Inspector"] = Relationship(back_populates="operated_calibrations", sa_relationship_kwargs={"foreign_keys": "[Calibration.test_operator_id]"})
-    approved_by: "Inspector" = Relationship(back_populates="approved_calibrations", sa_relationship_kwargs={"foreign_keys": "[Calibration.approved_by_id]"})
+    inspector: "Inspector" = Relationship(sa_relationship_kwargs={"foreign_keys": "[Calibration.inspector_id]"})
+    test_operator: Optional["Inspector"] = Relationship(sa_relationship_kwargs={"foreign_keys": "[Calibration.test_operator_id]"})
+    approved_by: "Inspector" = Relationship(sa_relationship_kwargs={"foreign_keys": "[Calibration.approved_by_id]"})

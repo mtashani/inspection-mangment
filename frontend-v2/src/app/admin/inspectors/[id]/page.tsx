@@ -41,20 +41,10 @@ import {
 } from '@/components/ui/alert-dialog'
 
 import { getInspectorById, deleteInspector } from '@/lib/api/admin/inspectors'
-import { Inspector, SpecialtyCode } from '@/types/admin'
+import { Inspector } from '@/types/admin'
 import { toast } from 'sonner'
 
-const specialtyLabels: Record<SpecialtyCode, string> = {
-  PSV: 'PSV (Pressure Safety Valve)',
-  CRANE: 'Crane Inspection',
-  CORROSION: 'Corrosion Monitoring'
-}
-
-const specialtyColors: Record<SpecialtyCode, string> = {
-  PSV: 'bg-blue-100 text-blue-800',
-  CRANE: 'bg-green-100 text-green-800',
-  CORROSION: 'bg-orange-100 text-orange-800'
-}
+// Specialty-related constants removed - no longer used
 
 export default function InspectorDetailsPage() {
   const params = useParams()
@@ -162,7 +152,7 @@ export default function InspectorDetailsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{inspector.name}</h1>
             <p className="text-muted-foreground">
-              {inspector.employeeId} • {inspector.inspectorType}
+              {inspector.employeeId}
             </p>
           </div>
         </div>
@@ -226,7 +216,7 @@ export default function InspectorDetailsPage() {
           </UIBadge>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information */}
           <Card>
             <CardHeader>
@@ -267,40 +257,11 @@ export default function InspectorDetailsPage() {
               )}
               
               <div className="flex items-center gap-3">
-                <Badge className="w-4 h-4 text-muted-foreground" />
+                <Calendar className="w-4 h-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium">Inspector Type</p>
-                  <p className="text-sm text-muted-foreground">{inspector.inspectorType}</p>
+                  <p className="text-sm font-medium">Years of Experience</p>
+                  <p className="text-sm text-muted-foreground">{inspector.yearsExperience} years</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Specialties */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Specialties
-              </CardTitle>
-              <CardDescription>
-                Inspection specialties and certifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {inspector.specialties.map((specialty) => (
-                  <UIBadge
-                    key={specialty}
-                    variant="secondary"
-                    className={specialtyColors[specialty]}
-                  >
-                    {specialtyLabels[specialty]}
-                  </UIBadge>
-                ))}
-                {inspector.specialties.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No specialties assigned</p>
-                )}
               </div>
             </CardContent>
           </Card>

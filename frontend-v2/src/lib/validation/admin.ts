@@ -4,9 +4,9 @@
 
 import { z } from 'zod'
 
-// Base validation schemas
+// Base validation schemas - specialty validation removed
 export const inspectorTypeSchema = z.enum(['INTERNAL', 'EXTERNAL', 'CONTRACTOR'])
-export const specialtyCodeSchema = z.enum(['PSV', 'CRANE', 'CORROSION'])
+// specialtyCodeSchema removed - no longer used
 export const attendanceStatusSchema = z.enum([
   'WORKING',
   'RESTING', 
@@ -96,9 +96,7 @@ export const inspectorFormSchema = z.object({
   
   inspectorType: inspectorTypeSchema,
   
-  specialties: z.array(specialtyCodeSchema)
-    .min(1, 'At least one specialty is required')
-    .max(3, 'Maximum 3 specialties allowed'),
+  // specialties field removed - no longer required
   
   // Education fields
   educationDegree: z.string()
@@ -207,19 +205,12 @@ export const inspectorFormSchema = z.object({
 export const inspectorFiltersSchema = z.object({
   search: z.string().optional(),
   inspectorType: inspectorTypeSchema.optional(),
-  specialties: z.array(specialtyCodeSchema).optional(),
+  // specialties filter removed
   active: z.boolean().optional(),
   canLogin: z.boolean().optional()
 })
 
-export const specialtyPermissionsSchema = z.object({
-  PSV: z.boolean(),
-  CRANE: z.boolean(),
-  CORROSION: z.boolean()
-}).refine(
-  (data) => Object.values(data).some(Boolean),
-  'At least one specialty must be selected'
-)
+// specialtyPermissionsSchema removed - no longer used
 
 // Attendance validation schemas
 export const workCycleDataSchema = z.object({
@@ -476,7 +467,7 @@ export const dateRangeSchema = z.object({
 // Export all schemas for easy importing
 export type InspectorFormData = z.infer<typeof inspectorFormSchema>
 export type InspectorFilters = z.infer<typeof inspectorFiltersSchema>
-export type SpecialtyPermissions = z.infer<typeof specialtyPermissionsSchema>
+// SpecialtyPermissions type removed - no longer used
 export type WorkCycleData = z.infer<typeof workCycleDataSchema>
 export type AttendanceRecordData = z.infer<typeof attendanceRecordSchema>
 export type AttendanceFilters = z.infer<typeof attendanceFiltersSchema>

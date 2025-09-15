@@ -12,7 +12,7 @@ export default function CreateInspectorPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Create New Inspector</h1>
         <p className="text-muted-foreground mt-2">
-          Add a new inspector to the system with their complete details and specialties.
+          Add a new inspector to the system with their complete details.
         </p>
       </div>
       <InspectorForm />

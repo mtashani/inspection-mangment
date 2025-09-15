@@ -48,9 +48,9 @@ except Exception as e:
 try:
     # Core Inspector Management
     from app.domains.inspector.api.inspector import router as inspector_router
-    from app.domains.inspector.api.specialty import router as specialty_router
+
     app.include_router(inspector_router, prefix=f"{settings.API_V1_STR}/inspectors", tags=["Inspectors"])
-    app.include_router(specialty_router, prefix=f"{settings.API_V1_STR}/inspectors", tags=["Inspector Specialties"])
+
     
     # Inspector Attendance Hub (with integrated analytics and reports)
     from app.domains.inspector.api.attendance.attendance import router as inspector_attendance_router
@@ -82,10 +82,13 @@ except Exception as e:
 
 # Admin Domain Routers
 try:
-    from app.domains.admin.api.dashboard import router as admin_router
-    app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+    from app.domains.admin.api.admin_router import router as admin_router
+    
+    app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin")
+    
     print("✅ Admin domain router loaded successfully")
     print(f"🔗 Admin Dashboard: {settings.API_V1_STR}/admin/dashboard")
+    print(f"🔗 Admin Management: {settings.API_V1_STR}/admin/roles, /permissions, etc.")
 except Exception as e:
     print(f"❌ Failed to load Admin router: {e}")
     import traceback

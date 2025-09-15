@@ -3,20 +3,20 @@
  */
 
 import { AdminDashboardStats, AdminAnalytics, AdminApiResponse } from '@/types/admin'
-import { adminApiGet } from './base'
+import { adminApiGet, adminApiGetAuthenticated } from './base'
 
 /**
  * Get admin dashboard statistics (using new admin domain)
  */
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   try {
-    // Get the main dashboard stats from new admin domain
-    const backendResponse = await adminApiGet<any>('/admin/dashboard')
+    // Get the main dashboard stats from admin API
+    const backendResponse = await adminApiGetAuthenticated<any>('/admin/dashboard')
     
     // Get recent activities to populate recent activity data
     let recentActivities
     try {
-      const activitiesResponse = await adminApiGet<any>('/admin/dashboard/recent-activities?limit=30')
+      const activitiesResponse = await adminApiGetAuthenticated<any>('/admin/dashboard/recent-activities?limit=30')
       recentActivities = activitiesResponse.activities || []
     } catch (error) {
       console.warn('Failed to fetch recent activities:', error)
@@ -78,7 +78,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
  * Get today's attendance summary (using new admin domain)
  */
 export async function getTodayAttendance(): Promise<any> {
-  const response = await adminApiGet<any>('/admin/dashboard/today-attendance')
+  const response = await adminApiGetAuthenticated<any>('/admin/dashboard/today-attendance')
   return response
 }
 
@@ -89,7 +89,7 @@ export async function getMonthlyOverview(
   jalaliYear: number,
   jalaliMonth: number
 ): Promise<any> {
-  const response = await adminApiGet<any>(
+  const response = await adminApiGetAuthenticated<any>(
     `/admin/dashboard/monthly-overview?jalali_year=${jalaliYear}&jalali_month=${jalaliMonth}`
   )
   return response
@@ -99,7 +99,7 @@ export async function getMonthlyOverview(
  * Get recent activities (using new admin domain)
  */
 export async function getRecentActivities(limit: number = 10): Promise<any> {
-  const response = await adminApiGet<any>(
+  const response = await adminApiGetAuthenticated<any>(
     `/admin/dashboard/recent-activities?limit=${limit}`
   )
   return response
@@ -109,7 +109,7 @@ export async function getRecentActivities(limit: number = 10): Promise<any> {
  * Get quick stats for widgets (using new admin domain)
  */
 export async function getQuickStats(): Promise<any> {
-  const response = await adminApiGet<any>('/admin/dashboard/quick-stats')
+  const response = await adminApiGetAuthenticated<any>('/admin/dashboard/quick-stats')
   return response
 }
 
@@ -117,7 +117,7 @@ export async function getQuickStats(): Promise<any> {
  * Get department summary (using new admin domain)
  */
 export async function getDepartmentSummary(): Promise<any> {
-  const response = await adminApiGet<any>('/admin/dashboard/department-summary')
+  const response = await adminApiGetAuthenticated<any>('/admin/dashboard/department-summary')
   return response
 }
 
@@ -125,7 +125,7 @@ export async function getDepartmentSummary(): Promise<any> {
  * Get inspector current status (using new admin domain)
  */
 export async function getInspectorStatus(inspectorId: number): Promise<any> {
-  const response = await adminApiGet<any>(`/admin/dashboard/inspector-status/${inspectorId}`)
+  const response = await adminApiGetAuthenticated<any>(`/admin/dashboard/inspector-status/${inspectorId}`)
   return response
 }
 
@@ -133,6 +133,6 @@ export async function getInspectorStatus(inspectorId: number): Promise<any> {
  * Check admin system health (using new admin domain)
  */
 export async function getSystemHealth(): Promise<any> {
-  const response = await adminApiGet<any>('/admin/system-health')
+  const response = await adminApiGetAuthenticated<any>('/admin/system-health')
   return response
 }
