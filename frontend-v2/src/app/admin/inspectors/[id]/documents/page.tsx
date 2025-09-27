@@ -239,6 +239,7 @@ export default function DocumentManagementPage() {
       ])
 
       setDocuments(docsData)
+      console.log('Fetched Documents Debug:', docsData.map(d => ({ id: d.id, mime_type: d.mime_type, original_filename: d.original_filename, download_url: d.download_url, previewUrl: `/api/v1/inspectors/documents/${d.id}/preview` })));
       setDocumentTypes(typesData)
       setStats(statsData)
     } catch (error) {
@@ -638,7 +639,7 @@ export default function DocumentManagementPage() {
                   {(() => {
                     const isImage = document.mime_type?.startsWith('image/');
                     const isPdf = document.mime_type === 'application/pdf';
-                    const previewUrl = `/api/v1${fileUploadAPI.getPreviewUrl(document.id)}`;
+                    const previewUrl = `/api/v1/inspector/documents/${document.id}/preview`;  // Fixed: Hardcoded to bypass API class issue
 
                     if (isImage) {
                       return (
@@ -649,6 +650,7 @@ export default function DocumentManagementPage() {
                             loading="lazy"
                             className="max-h-48 max-w-full object-contain rounded"
                             onError={(e) => {
+                              console.error('Image Preview Failed:', { documentId: document.id, url: previewUrl, error: e });
                               (e.target as HTMLImageElement).style.display = 'none';
                               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                             }}
@@ -661,10 +663,21 @@ export default function DocumentManagementPage() {
                       );
                     } else if (isPdf) {
                       return (
-                        <div className="flex justify-center p-2 bg-muted rounded-md">
-                          <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md text-muted-foreground">
+                        <div className="flex justify-center p-4 bg-muted rounded-md max-h-48 overflow-hidden">
+                          <iframe
+                            src={previewUrl}
+                            title={`Preview of ${document.original_filename}`}
+                            loading="lazy"
+                            className="w-full h-48 border-0 rounded"
+                            onError={(e) => {
+                              console.error('PDF Preview Failed:', { documentId: document.id, url: previewUrl, error: e });
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="hidden flex flex-col items-center justify-center p-8 bg-muted rounded-md text-muted-foreground">
                             <FileText className="h-12 w-12 mb-2" />
-                            <p className="text-sm text-center">Download PDF to view {document.original_filename}</p>
+                            <p className="text-sm text-center">PDF preview unavailable - download to view</p>
                             <Button
                               size="sm"
                               variant="outline"

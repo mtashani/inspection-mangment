@@ -6,12 +6,14 @@ Handles file upload, validation, storage, and management
 import os
 import uuid
 import mimetypes
+import io
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any, BinaryIO
 from fastapi import UploadFile, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlmodel import Session, select
+from PIL import Image
 
 from app.domains.inspector.models.documents import InspectorDocument, DocumentType
 from app.domains.inspector.models.inspector import Inspector
@@ -297,7 +299,25 @@ class FileUploadService:
         """Get full file path for document"""
         return self.UPLOAD_DIR / document.file_url
     
-    def serve_document_file(self, document: InspectorDocument, disposition: str = 'attachment', filename: Optional[str] = None) -> FileResponse:
+    def generate_thumbnail(self, file_path: Path, max_size: tuple = (200, 200)) -> bytes:
+        """Generate thumbnail for image files"""
+        try:
+            with Image.open(file_path) as img:
+                # Convert to RGB if necessary (for JPEG output)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Resize maintaining aspect ratio
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Save to BytesIO as JPEG
+                output = io.BytesIO()
+                img.save(output, format='JPEG', quality=85)
+                return output.getvalue()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate thumbnail: {str(e)}")
+
+    def serve_document_file(self, document: InspectorDocument, disposition: str = 'attachment', filename: Optional[str] = None) -> FileResponse | Response:
         """Serve document file for download or preview"""
         file_path = self.get_file_path(document)
         
@@ -306,6 +326,21 @@ class FileUploadService:
                 status_code=404,
                 detail="File not found"
             )
+        
+        # For preview (inline) of images, serve thumbnail
+        if disposition == 'inline' and document.mime_type and document.mime_type.startswith('image/'):
+            try:
+                thumbnail_bytes = self.generate_thumbnail(file_path)
+                return Response(
+                    content=thumbnail_bytes,
+                    media_type='image/jpeg',
+                    headers={"Content-Disposition": 'inline'}
+                )
+            except HTTPException:
+                raise
+            except Exception:
+                # Fallback to full image if thumbnail fails
+                pass
         
         # Determine media type
         media_type = document.mime_type or "application/octet-stream"
