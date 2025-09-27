@@ -81,8 +81,8 @@ async def login(
 
 @router.get("/me", response_model=UserInfo)
 def read_users_me(
-    db: Session = Depends(get_session),
-    request: Request = None
+    request: Request,
+    db: Session = Depends(get_session)
 ) -> Any:
     """
     Get current user information
@@ -104,8 +104,14 @@ def read_users_me(
     
     # Get roles
     roles = []
-    for role in inspector.roles:
-        roles.append(role.role.name)
+    if hasattr(inspector, 'roles') and inspector.roles:
+        for role in inspector.roles:
+            roles.append(role.role.name)
+    
+    # Get permissions
+    from app.domains.auth.services.permission_service import PermissionService
+    import asyncio
+    permissions = asyncio.run(PermissionService.get_inspector_permissions(db, inspector.id))
     
     return {
         "id": inspector.id,
@@ -113,6 +119,7 @@ def read_users_me(
         "email": inspector.email,
         "name": f"{inspector.first_name} {inspector.last_name}",
         "roles": roles,
+        "permissions": list(permissions),
         "is_active": inspector.active,
         "employee_id": inspector.employee_id
     }

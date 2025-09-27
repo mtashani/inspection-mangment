@@ -2,36 +2,27 @@
 
 import React from 'react';
 import { Badge, BadgeProps } from '@/components/ui/badge';
-import { PermissionGuard } from '@/components/auth/permission-guard';
-import { ProtectedComponentProps } from '@/types/permissions';
 import { Shield, Lock, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface PermissionBadgeProps extends BadgeProps, Omit<ProtectedComponentProps, 'children'> {
+// Simplified permission badge without auth guards
+interface PermissionBadgeProps extends BadgeProps {
   children: React.ReactNode;
   showPermissionIcon?: boolean;
   permissionIconPosition?: 'left' | 'right';
-  hideWhenNoAccess?: boolean;
 }
 
 /**
- * Badge component that shows/hides based on permissions
+ * Simple badge component (permission logic moved to middleware)
  */
 export function PermissionBadge({
   children,
-  permission,
-  permissions,
-  role,
-  roles,
-  requireAll = false,
   showPermissionIcon = false,
   permissionIconPosition = 'left',
-  hideWhenNoAccess = true,
-  fallback,
   className,
   ...badgeProps
 }: PermissionBadgeProps) {
-  const badgeContent = (
+  return (
     <Badge className={cn('flex items-center gap-1', className)} {...badgeProps}>
       {showPermissionIcon && permissionIconPosition === 'left' && (
         <Shield className="w-3 h-3" />
@@ -42,38 +33,17 @@ export function PermissionBadge({
       )}
     </Badge>
   );
-
-  if (hideWhenNoAccess) {
-    return (
-      <PermissionGuard
-        permission={permission}
-        permissions={permissions}
-        role={role}
-        roles={roles}
-        requireAll={requireAll}
-        fallback={fallback}
-      >
-        {badgeContent}
-      </PermissionGuard>
-    );
-  }
-
-  return badgeContent;
 }
 
 /**
- * Status badge that changes appearance based on permissions
+ * Status badge that shows status (permission logic handled by middleware)
  */
 export function StatusBadge({
   status,
-  canEdit = false,
-  editPermission,
   className,
   ...props
-}: Omit<PermissionBadgeProps, 'children'> & {
+}: BadgeProps & {
   status: string;
-  canEdit?: boolean;
-  editPermission?: { resource: string; action: string };
 }) {
   const getStatusVariant = (status: string): BadgeProps['variant'] => {
     switch (status.toLowerCase()) {
@@ -96,19 +66,9 @@ export function StatusBadge({
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Badge variant={getStatusVariant(status)} className={className} {...props}>
-        {status}
-      </Badge>
-      {canEdit && editPermission && (
-        <PermissionGuard permission={editPermission}>
-          <Badge variant="outline" className="text-xs cursor-pointer hover:bg-muted">
-            <Eye className="w-3 h-3 mr-1" />
-            Editable
-          </Badge>
-        </PermissionGuard>
-      )}
-    </div>
+    <Badge variant={getStatusVariant(status)} className={className} {...props}>
+      {status}
+    </Badge>
   );
 }
 

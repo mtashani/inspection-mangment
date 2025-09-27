@@ -9,6 +9,7 @@ from datetime import datetime
 from app.database import get_session as get_db
 from app.domains.auth.services.auth_service import AuthService
 from app.domains.auth.services.permission_service import PermissionService
+from app.core.permissions import validate_permission
 
 if TYPE_CHECKING:
     from app.domains.inspector.models.inspector import Inspector
@@ -63,165 +64,67 @@ async def get_current_active_inspector(
     
     return inspector
 
-def require_permission(resource: str, action: str) -> Callable:
+def require_standardized_permission(permission: str) -> Callable:
     """
-    Dependency factory for protecting endpoints with specific permissions
+    Enhanced permission dependency that uses standardized permissions
     
     Args:
-        resource: The resource being accessed (e.g., 'ndt', 'psv', 'report')
-        action: The action being performed (e.g., 'create', 'view', 'approve')
+        permission: Standardized permission name (e.g., "mechanical_view", "system_superadmin")
     
     Returns:
-        FastAPI dependency function that checks permissions
+        Dependency function that validates the permission
     """
-    async def permission_dependency(
+    
+    async def permission_checker(
         request: Request,
         inspector: "Inspector" = Depends(get_current_active_inspector),
         db: Session = Depends(get_db)
     ) -> "Inspector":
-        """Check if inspector has required permission"""
-        try:
-            has_perm = await PermissionService.has_permission(db, inspector, resource, action)
-            
-            if not has_perm:
-                # Log authorization failure for audit
-                logging.warning(
-                    f"Authorization failed: inspector={inspector.id}, "
-                    f"resource={resource}, action={action}, "
-                    f"endpoint={request.url.path}, method={request.method}, "
-                    f"client={request.client.host}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Insufficient permissions for {resource}:{action}"
-                )
-            
-            # Log successful authorization for audit
-            logging.info(
-                f"Authorization success: inspector={inspector.id}, "
-                f"resource={resource}, action={action}, "
-                f"endpoint={request.url.path}, method={request.method}"
-            )
-            
-            return inspector
-            
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"Permission check error: {e}")
+        
+        # Validate permission format
+        if not validate_permission(permission):
+            logging.error(f"Invalid standardized permission requested: {permission}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Permission check failed"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid permission: {permission}. Must be one of the 23 standardized permissions."
             )
-    
-    return permission_dependency
-
-def require_any_permission(*permissions: tuple[str, str]) -> Callable:
-    """
-    Dependency factory for endpoints that require any of multiple permissions
-    
-    Args:
-        permissions: Tuples of (resource, action) pairs
-    
-    Returns:
-        FastAPI dependency function that checks if user has any of the permissions
-    """
-    async def any_permission_dependency(
-        request: Request,
-        inspector: "Inspector" = Depends(get_current_active_inspector),
-        db: Session = Depends(get_db)
-    ) -> "Inspector":
-        """Check if inspector has any of the required permissions"""
-        try:
-            for resource, action in permissions:
-                has_perm = await PermissionService.has_permission(db, inspector, resource, action)
-                if has_perm:
-                    logging.info(
-                        f"Authorization success (any): inspector={inspector.id}, "
-                        f"matched={resource}:{action}, endpoint={request.url.path}"
-                    )
-                    return inspector
-            
-            # Log authorization failure
-            perm_strings = [f"{r}:{a}" for r, a in permissions]
+        
+        # Check permission
+        has_access = await PermissionService.check_inspector_permission(
+            db, inspector.id, permission
+        )
+        
+        # Log access attempt
+        logging.info(
+            f"Standardized permission check: inspector={inspector.id} ({inspector.username}), "
+            f"permission={permission}, granted={has_access}, "
+            f"endpoint={request.url.path}, method={request.method}"
+        )
+        
+        if not has_access:
             logging.warning(
-                f"Authorization failed (any): inspector={inspector.id}, "
-                f"required_any={perm_strings}, endpoint={request.url.path}"
+                f"Access denied: inspector={inspector.id} ({inspector.username}), "
+                f"permission={permission}, endpoint={request.url.path}"
+            )
+            
+            # Get inspector's current permissions for better error message
+            inspector_permissions = await PermissionService.get_inspector_permissions(
+                db, inspector.id
             )
             
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Insufficient permissions. Required any of: {', '.join(perm_strings)}"
+                detail={
+                    "message": f"Insufficient permissions. Required: {permission}",
+                    "required_permission": permission,
+                    "current_permissions": inspector_permissions,
+                    "suggestion": "Contact your administrator to request the required permission."
+                }
             )
-            
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"Permission check error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Permission check failed"
-            )
+        
+        return inspector
     
-    return any_permission_dependency
-
-def require_all_permissions(*permissions: tuple[str, str]) -> Callable:
-    """
-    Dependency factory for endpoints that require all of multiple permissions
-    
-    Args:
-        permissions: Tuples of (resource, action) pairs
-    
-    Returns:
-        FastAPI dependency function that checks if user has all permissions
-    """
-    async def all_permissions_dependency(
-        request: Request,
-        inspector: "Inspector" = Depends(get_current_active_inspector),
-        db: Session = Depends(get_db)
-    ) -> "Inspector":
-        """Check if inspector has all required permissions"""
-        try:
-            missing_permissions = []
-            
-            for resource, action in permissions:
-                has_perm = await PermissionService.has_permission(db, inspector, resource, action)
-                if not has_perm:
-                    missing_permissions.append(f"{resource}:{action}")
-            
-            if missing_permissions:
-                logging.warning(
-                    f"Authorization failed (all): inspector={inspector.id}, "
-                    f"missing={missing_permissions}, endpoint={request.url.path}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Missing required permissions: {', '.join(missing_permissions)}"
-                )
-            
-            logging.info(
-                f"Authorization success (all): inspector={inspector.id}, "
-                f"endpoint={request.url.path}"
-            )
-            
-            return inspector
-            
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"Permission check error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Permission check failed"
-            )
-    
-    return all_permissions_dependency
-
-# Convenience dependencies for common admin operations
-require_admin_access = require_permission("admin", "manage")
-require_user_management = require_permission("admin", "manage_users")
-require_role_management = require_permission("admin", "manage_roles")
-require_permission_management = require_permission("admin", "manage_permissions")
+    return permission_checker
 
 # Audit logging middleware dependency
 async def log_request(

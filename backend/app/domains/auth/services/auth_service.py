@@ -17,18 +17,17 @@ if TYPE_CHECKING:
 # Define generic type for Inspector model
 T = TypeVar('T')
 
-# Password hashing context - use bcrypt with explicit configuration for compatibility
+# Password hashing context - updated configuration without deprecated options
 try:
     # Import bcrypt directly to check version compatibility
     import bcrypt
     
-    # Configure CryptContext with explicit bcrypt settings
+    # Configure CryptContext with explicit bcrypt settings (removed deprecated vary_rounds)
     pwd_context = CryptContext(
         schemes=["bcrypt"], 
         deprecated="auto",
         bcrypt__rounds=12,  # Explicit rounds for consistency
-        bcrypt__ident="2b",  # Use 2b identifier for compatibility
-        bcrypt__vary_rounds=0.1  # Allow some variation in rounds
+        bcrypt__ident="2b"   # Use 2b identifier for compatibility
     )
     
     # Test the context to ensure it works

@@ -6,25 +6,25 @@ from sqlmodel import SQLModel, Field, Relationship
 
 class DocumentType(str, Enum):
     """Enumeration for document types"""
-    ProfileImage = "profile_image"
-    Certificate = "certificate"
     IdCard = "id_card"
-    Qualification = "qualification"
-    TrainingRecord = "training_record"
+    BirthCertificate = "birth_certificate"
+    MilitaryService = "military_service"
+    Degree = "degree"
     Other = "other"
 
 
 class InspectorDocument(SQLModel, table=True):
     """Model for inspector documents"""
-    __tablename__ = "inspector_documents"
+    __tablename__ = "inspector_documents"  # type: ignore
     
     id: Optional[int] = Field(default=None, primary_key=True)
     inspector_id: int = Field(foreign_key="inspectors.id")
     
-    document_type: str
+    document_type: DocumentType
     file_url: str  # S3 or other storage URL
     upload_date: datetime = Field(default_factory=datetime.utcnow)
-    filename: str
+    filename: str  # Storage filename (unique)
+    original_filename: str  # Original uploaded filename
     file_size: int  # in bytes
     description: Optional[str] = None
     mime_type: Optional[str] = None
@@ -37,4 +37,8 @@ class InspectorDocument(SQLModel, table=True):
 
 
 # Import at the end to avoid circular imports
-from app.domains.inspector.models.inspector import Inspector
+# Use string annotation to avoid circular import issues
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.domains.inspector.models.inspector import Inspector

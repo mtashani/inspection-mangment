@@ -21,15 +21,18 @@ class Role(SQLModel, table=True):
 
 
 class Permission(SQLModel, table=True):
-    """Permission model for authorization"""
+    """Permission model for authorization - Updated for standardized permissions"""
     __tablename__ = "permissions"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True, index=True)
+    name: str = Field(unique=True, index=True)  # Standardized permission name (e.g., "mechanical_view")
     description: Optional[str] = None
-    resource: str  # e.g., "inspectors", "psv", "calibration"
-    action: str    # e.g., "create", "read", "update", "delete", "approve"
+    resource: str  # Domain name (e.g., "mechanical", "system", "ndt")
+    action: str    # Action type (e.g., "view", "edit", "approve")
     display_label: str = Field(description="Display label for UI presentation")
+    category: Optional[str] = Field(default="technical", description="Permission category: system or technical")
+    domain: Optional[str] = Field(default=None, description="Business domain for grouping")
+    is_active: bool = Field(default=True, description="Whether permission is active")
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

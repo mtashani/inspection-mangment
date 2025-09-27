@@ -4,6 +4,12 @@ from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, JSON, Text
 from enum import Enum
 
+# Use TYPE_CHECKING to avoid circular imports
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.domains.inspector.models.inspector import Inspector
+
 class NotificationType(str, Enum):
     """Enumeration for notification types"""
     EVENT_CREATED = "event_created"
@@ -121,6 +127,3 @@ class NotificationPreference(SQLModel, table=True):
     
     # Relationships
     inspector: "Inspector" = Relationship(back_populates="notification_preferences")
-
-# Import at the end to avoid circular imports
-from app.domains.inspector.models.inspector import Inspector

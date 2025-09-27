@@ -8,9 +8,7 @@ import { AuthGuard } from '@/components/auth-guard';
 import { QueryProvider } from '@/components/query-provider';
 import { PerformanceMonitor } from '@/components/performance-monitor';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { DebugTrigger } from '@/components/debug-panel';
 import { DevStatusIndicator } from '@/components/ui/dev-status-indicator';
-import { MonitoringDebug } from '@/components/dev/monitoring-debug';
 import { RealTimeNotificationsProvider } from '@/contexts/real-time-notifications';
 import { RealTimeLayout } from '@/components/layout/real-time-layout';
 
@@ -80,14 +78,12 @@ export default function RootLayout({
                 </AuthProvider>
               </URLStateProvider>
             </ThemeProvider>
-            <PerformanceMonitor />
-            <DebugTrigger />
+           <PerformanceMonitor />
             <DevStatusIndicator />
-            <MonitoringDebug />
             <Toaster 
               position="top-right" 
               richColors 
-              closeButton 
+              closeButton  
               duration={4000}
             />
           </QueryProvider>

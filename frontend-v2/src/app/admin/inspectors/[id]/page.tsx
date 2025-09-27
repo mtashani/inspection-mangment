@@ -1,7 +1,8 @@
 'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Edit, 
@@ -16,9 +17,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Award,
+  Files
 } from 'lucide-react'
 
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Badge as UIBadge } from '@/components/ui/badge'
 import {
@@ -28,6 +32,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +52,7 @@ import {
 
 import { getInspectorById, deleteInspector } from '@/lib/api/admin/inspectors'
 import { Inspector } from '@/types/admin'
+import { InspectorRoleManagement } from '@/components/admin/inspectors/inspector-role-management'
 import { toast } from 'sonner'
 
 // Specialty-related constants removed - no longer used
@@ -49,11 +60,20 @@ import { toast } from 'sonner'
 export default function InspectorDetailsPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const inspectorId = parseInt(params.id as string)
+  const activeTab = searchParams.get('tab') || 'overview'
   const [inspector, setInspector] = useState<Inspector | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const breadcrumbs = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Admin Panel', href: '/admin' },
+    { label: 'Inspectors', href: '/admin/inspectors' },
+    { label: inspector?.name || 'Inspector Details', href: `/admin/inspectors/${inspectorId}`, isActive: true }
+  ]
 
   useEffect(() => {
     const fetchInspector = async () => {
@@ -93,55 +113,60 @@ export default function InspectorDetailsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inspector Details</h1>
-          <p className="text-muted-foreground">
-            Loading inspector information...
-          </p>
-        </div>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex items-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <span>Loading inspector details...</span>
+      <DashboardLayout breadcrumbs={breadcrumbs}>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Inspector Details</h1>
+            <p className="text-muted-foreground">
+              Loading inspector information...
+            </p>
+          </div>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>Loading inspector details...</span>
+            </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   if (error || !inspector) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inspector Details</h1>
-          <p className="text-muted-foreground">
-            There was an error loading the inspector.
-          </p>
-        </div>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-destructive mb-2">
-              {error || 'Inspector not found'}
-            </h2>
+      <DashboardLayout breadcrumbs={breadcrumbs}>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Inspector Details</h1>
             <p className="text-muted-foreground">
-              The inspector you're looking for could not be found.
+              There was an error loading the inspector.
             </p>
           </div>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-destructive mb-2">
+                {error || 'Inspector not found'}
+              </h2>
+              <p className="text-muted-foreground">
+                The inspector you're looking for could not be found.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   return (
+    <DashboardLayout breadcrumbs={breadcrumbs}>
     <div className="space-y-6">
       {/* Header Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full border-2 border-muted flex items-center justify-center overflow-hidden bg-muted">
-            {inspector.profileImage ? (
+            {inspector.profileImageUrl ? (
               <img
-                src={inspector.profileImage}
+                src={inspector.profileImageUrl}
                 alt={inspector.name}
                 className="w-full h-full object-cover"
               />
@@ -158,6 +183,20 @@ export default function InspectorDetailsPage() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/admin/inspectors/${inspector.id}/certificates`}>
+              <Award className="w-4 h-4 mr-2" />
+              Certificates
+            </Link>
+          </Button>
+          
+          <Button variant="outline" asChild>
+            <Link href={`/admin/inspectors/${inspector.id}/documents`}>
+              <Files className="w-4 h-4 mr-2" />
+              Documents
+            </Link>
+          </Button>
+          
           <Button asChild>
             <Link href={`/admin/inspectors/${inspector.id}/edit`}>
               <Edit className="w-4 h-4 mr-2" />
@@ -215,6 +254,24 @@ export default function InspectorDetailsPage() {
             {inspector.attendanceTrackingEnabled ? 'Attendance Tracked' : 'No Attendance Tracking'}
           </UIBadge>
         </div>
+
+        {/* Tabs for different sections */}
+        <Tabs value={activeTab} onValueChange={(value) => {
+          const url = new URL(window.location.href)
+          if (value === 'overview') {
+            url.searchParams.delete('tab')
+          } else {
+            url.searchParams.set('tab', value)
+          }
+          router.push(url.pathname + url.search)
+        }}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
+            <TabsTrigger value="system">System Info</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information */}
@@ -299,54 +356,56 @@ export default function InspectorDetailsPage() {
             </CardContent>
           </Card>
         </div>
+          </TabsContent>
 
-        {/* Additional Information */}
-        {inspector.notes && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Additional Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{inspector.notes}</p>
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="roles" className="space-y-6">
+            {/* Role Management */}
+            <InspectorRoleManagement 
+              inspectorId={inspector.id}
+              inspectorName={inspector.name}
+              onRolesChanged={() => {
+                // Refresh inspector data if needed
+                console.log('Roles updated for inspector:', inspector.id)
+              }}
+            />
+          </TabsContent>
 
-        {/* System Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>System Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium">Created At</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(inspector.createdAt).toLocaleString()}
-                </p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium">Last Updated</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(inspector.updatedAt).toLocaleString()}
-                </p>
-              </div>
-              
-              {inspector.lastLoginAt && (
-                <div>
-                  <p className="text-sm font-medium">Last Login</p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(inspector.lastLoginAt).toLocaleString()}
-                  </p>
+          <TabsContent value="system" className="space-y-6">
+            {/* System Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>System Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Created At</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(inspector.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium">Last Updated</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(inspector.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  {inspector.lastLoginAt && (
+                    <div>
+                      <p className="text-sm font-medium">Last Login</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(inspector.lastLoginAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
   )
 }

@@ -69,8 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user || !user.roles) {
       return false;
     }
-    // Check if user has Global Admin role (exact match)
-    return user.roles.includes('Global Admin');
+    // Check if user has admin role or system_superadmin permission
+    return user.roles.includes('Super Admin') || 
+           user.roles.includes('Global Admin') || 
+           (user as any).permissions?.includes('system_superadmin');
   };
 
   useEffect(() => {

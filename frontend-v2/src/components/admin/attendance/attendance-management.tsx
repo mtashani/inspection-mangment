@@ -24,6 +24,7 @@ import { AttendanceReports } from './attendance-reports'
 import { AttendanceAnalytics } from './attendance-analytics'
 import { AttendanceOverride } from './attendance-override'
 import { AttendanceApproval } from './attendance-approval'
+import { AttendanceBulkImport } from './attendance-bulk-import'
 import { Inspector, AttendanceRecord, WorkCycle, AttendanceStatus } from '@/types/admin'
 import { 
   getInspectorAttendance, 
@@ -34,7 +35,8 @@ import {
   createWorkCycle,
   updateWorkCycle,
   resetWorkCycle,
-  deleteWorkCycle
+  deleteWorkCycle,
+  bulkUpdateAttendance
 } from '@/lib/api/admin/attendance'
 import { getInspectors } from '@/lib/api/admin/inspectors'
 import { cn } from '@/lib/utils'
@@ -64,6 +66,7 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
   const [inspectorsLoading, setInspectorsLoading] = useState(true)
   const [showOverride, setShowOverride] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
+  const [showBulkImport, setShowBulkImport] = useState(false)
   const { toast } = useToast()
 
   const loadInspectors = async () => {
@@ -291,6 +294,27 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
     }
   }
 
+  const handleBulkImport = async (data: any[], options: any) => {
+    try {
+      // Import attendance data using the bulk import API
+      const result = await bulkUpdateAttendance(data)
+      
+      // Reload attendance data after import
+      await loadAttendanceData()
+      
+      return {
+        totalRecords: data.length,
+        imported: result.successful_updates || 0,
+        skipped: result.skipped_records?.length || 0,
+        failed: result.failed_updates || 0,
+        errors: result.errors || []
+      }
+    } catch (error) {
+      console.error('Failed to import attendance data:', error)
+      throw error
+    }
+  }
+
   const getAttendanceStats = () => {
     if (!attendanceData.length) return null
 
@@ -342,7 +366,7 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowBulkImport(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
@@ -563,9 +587,19 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
               <CardHeader>
                 <CardTitle>Bulk Export & Import</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Bulk operations will be implemented in task 7 (Bulk Operations System)
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button onClick={() => setShowBulkImport(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Bulk Import Attendance
+                  </Button>
+                  <Button variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export All Data
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Import attendance data from Excel/CSV files or export current data for analysis.
                 </p>
               </CardContent>
             </Card>
@@ -630,6 +664,19 @@ export function AttendanceManagement({ className }: AttendanceManagementProps) {
                 setShowOverride(false)
                 setSelectedRecord(null)
               }}
+              loading={loading}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Dialog */}
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <AttendanceBulkImport
+              onImport={handleBulkImport}
+              onClose={() => setShowBulkImport(false)}
               loading={loading}
             />
           </div>

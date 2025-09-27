@@ -12,16 +12,18 @@ from app.domains.inspector.schemas.attendance import (
 )
 from app.domains.inspector.services.attendance_service import AttendanceService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_active_inspector, require_permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
+from app.core.api_logging import log_api_errors
 
 router = APIRouter()
 
+@log_api_errors("inspector")
 @router.get("", response_model=List[AttendanceRecordResponse])
 def get_all_attendance(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get all attendance records for a Jalali month (admin only).
@@ -30,11 +32,12 @@ def get_all_attendance(
     records = service.get_all_attendance(jalali_year, jalali_month)
     return [AttendanceRecordResponse.from_model(record) for record in records]
 
+@log_api_errors("inspector")
 @router.post("", response_model=AttendanceRecordResponse)
 def create_attendance(
     attendance_data: AttendanceRecordCreate,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Create an attendance record (admin only).
@@ -43,6 +46,7 @@ def create_attendance(
     record = service.create_attendance(attendance_data)
     return AttendanceRecordResponse.from_model(record)
 
+@log_api_errors("inspector")
 @router.get("/attendance-record/{attendance_id}", response_model=AttendanceRecordResponse)
 def get_attendance(
     attendance_id: int,
@@ -58,12 +62,13 @@ def get_attendance(
         raise HTTPException(status_code=404, detail="Attendance record not found.")
     return AttendanceRecordResponse.from_model(record)
 
+@log_api_errors("inspector")
 @router.put("/attendance-record/{attendance_id}", response_model=AttendanceRecordResponse)
 def update_attendance(
     attendance_id: int,
     attendance_data: AttendanceRecordUpdate,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Update an attendance record (admin only).
@@ -72,11 +77,12 @@ def update_attendance(
     record = service.update_attendance(attendance_id, attendance_data)
     return AttendanceRecordResponse.from_model(record)
 
+@log_api_errors("inspector")
 @router.delete("/attendance-record/{attendance_id}")
 def delete_attendance(
     attendance_id: int,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Delete an attendance record (admin only).
@@ -85,6 +91,7 @@ def delete_attendance(
     service.delete_attendance(attendance_id)
     return {"message": "Attendance record deleted successfully"}
 
+@log_api_errors("inspector")
 @router.get("/{inspector_id}", response_model=List[AttendanceRecordResponse])
 async def get_inspector_attendance(
     inspector_id: int,
@@ -123,11 +130,12 @@ async def get_inspector_attendance(
     # Don't raise 404 if no records - return empty list or predicted data
     return [AttendanceRecordResponse.from_model(record) for record in records]
 
+@log_api_errors("inspector")
 @router.post("/bulk", response_model=dict)
 async def bulk_update_attendance(
     updates: List[dict] = Body(..., description="List of attendance updates"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Bulk update attendance records for multiple inspectors/dates.
@@ -173,13 +181,14 @@ async def bulk_update_attendance(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bulk update failed: {str(e)}")
 
+@log_api_errors("inspector")
 @router.get("/summary", response_model=dict)
 async def get_attendance_summary(
     jalali_year: int = Query(..., description="Jalali year"),
     jalali_month: int = Query(..., description="Jalali month"),
     department: Optional[str] = Query(None, description="Filter by department"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get attendance summary for all inspectors in a given month.
@@ -210,10 +219,11 @@ async def get_attendance_summary(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get attendance summary: {str(e)}")
 
+@log_api_errors("inspector")
 @router.get("/today", response_model=dict)
 async def get_today_attendance(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get today's attendance overview.
@@ -227,12 +237,13 @@ async def get_today_attendance(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get today's attendance: {str(e)}")
 
+@log_api_errors("inspector")
 @router.get("/monthly-overview", response_model=dict)
 async def get_monthly_overview(
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get monthly attendance overview.

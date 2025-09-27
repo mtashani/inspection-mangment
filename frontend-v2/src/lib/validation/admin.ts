@@ -66,13 +66,6 @@ export const inspectorFormSchema = z.object({
       'Invalid Iranian phone number format'
     ),
   
-  department: z.string()
-    .optional()
-    .refine(
-      (val) => !val || val.length <= 100,
-      'Department name must be less than 100 characters'
-    ),
-  
   dateOfBirth: z.string()
     .optional()
     .refine(
@@ -93,8 +86,6 @@ export const inspectorFormSchema = z.object({
   
   maritalStatus: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'])
     .optional(),
-  
-  inspectorType: inspectorTypeSchema,
   
   // specialties field removed - no longer required
   

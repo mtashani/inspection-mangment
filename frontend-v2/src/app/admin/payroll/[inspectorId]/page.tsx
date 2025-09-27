@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { InspectorPayrollDetails } from '@/components/admin/payroll/inspector-payroll-details'
-import { AdminPermissionGuard } from '@/components/admin/shared/admin-permission-guard'
 
 interface InspectorPayrollPageProps {
   params: {
@@ -24,10 +24,17 @@ export default function InspectorPayrollPage({ params }: InspectorPayrollPagePro
   }
 
   return (
-    <AdminPermissionGuard requiredPermission="canViewPayroll">
+    <DashboardLayout 
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Admin Panel', href: '/admin' },
+        { label: 'Payroll Management', href: '/admin/payroll' },
+        { label: `Inspector ${inspectorId}`, current: true }
+      ]}
+    >
       <div className="container mx-auto px-4 py-8">
         <InspectorPayrollDetails inspectorId={inspectorId} />
       </div>
-    </AdminPermissionGuard>
+    </DashboardLayout>
   )
 }

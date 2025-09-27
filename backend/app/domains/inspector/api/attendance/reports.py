@@ -6,7 +6,7 @@ from sqlmodel import Session
 from io import BytesIO
 import json
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_active_inspector, require_permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
 from app.domains.inspector.services.reporting_service import ReportingService
 from app.domains.inspector.schemas.reports import (
     AttendanceReportResponse,
@@ -16,14 +16,16 @@ from app.domains.inspector.schemas.reports import (
     AvailableFormatsResponse,
     ReportFilters
 )
+from app.core.api_logging import log_api_errors
 
 router = APIRouter()
 
 
+@log_api_errors("inspector")
 @router.get("", response_model=List[dict])
 async def list_available_reports(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     List all available inspector attendance reports.
@@ -54,11 +56,12 @@ async def list_available_reports(
         raise HTTPException(status_code=500, detail=f"Failed to list reports: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.post("", response_model=AttendanceReportResponse)
 async def generate_attendance_report(
     filters: ReportFilters,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Generate comprehensive inspector attendance report based on filters.
@@ -72,13 +75,14 @@ async def generate_attendance_report(
         raise HTTPException(status_code=500, detail=f"Failed to generate attendance report: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/{report_id}")
 async def get_specific_report(
     report_id: str,
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get a specific inspector attendance report by ID.
@@ -119,11 +123,12 @@ async def get_specific_report(
         raise HTTPException(status_code=500, detail=f"Failed to get report: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.post("/export")
 async def export_attendance_data(
     export_request: ExportRequest,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Export inspector attendance data in specified format (CSV, Excel, PDF, JSON).
@@ -165,11 +170,12 @@ async def export_attendance_data(
         raise HTTPException(status_code=500, detail=f"Failed to export data: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.post("/bulk-export")
 async def bulk_export_attendance_data(
     bulk_request: BulkExportRequest,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Bulk export multiple inspector attendance report types in specified format.
@@ -242,10 +248,11 @@ async def bulk_export_attendance_data(
         raise HTTPException(status_code=500, detail=f"Failed to bulk export data: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/formats", response_model=AvailableFormatsResponse)
 async def get_available_formats(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get list of supported export formats and their capabilities.
@@ -277,10 +284,11 @@ async def get_available_formats(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve available formats: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/templates")
 async def get_report_templates(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get predefined report templates for common inspector attendance use cases.
@@ -347,11 +355,12 @@ async def get_report_templates(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve report templates: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.post("/schedule")
 async def schedule_recurring_report(
     schedule_data: dict = Body(...),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Schedule a recurring inspector attendance report.
@@ -369,10 +378,11 @@ async def schedule_recurring_report(
         raise HTTPException(status_code=500, detail=f"Failed to schedule report: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/scheduled")
 async def get_scheduled_reports(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get list of scheduled recurring inspector attendance reports.

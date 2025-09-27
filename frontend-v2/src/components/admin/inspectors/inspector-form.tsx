@@ -1,6 +1,5 @@
 "use client"
-
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
@@ -17,13 +16,22 @@ import {
   Save,
   X,
   Loader2,
-  Plus
+  Plus,
+  Award,
+  AlertTriangle,
+  CheckCircle2,
+  Clock
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ProfileImageUpload } from '@/components/ui/profile-image-upload'
+import { FileUpload } from '@/components/ui/file-upload'
+import { DocumentManager } from '@/components/ui/document-manager'
+import { InspectorRoleManagement } from './inspector-role-management'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Form,
   FormControl,
@@ -53,10 +61,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
-import { Inspector, InspectorFormData, InspectorType } from '@/types/admin'
+import { Inspector, InspectorFormData } from '@/types/admin'
 import { inspectorFormSchema } from '@/lib/validation/admin'
 import { createInspector, updateInspector } from '@/lib/api/admin/inspectors'
+import { fileUploadAPI, DocumentType, type DocumentInfo } from '@/lib/api/admin/files'
+import { JalaliDatePicker } from '@/components/ui/dual-calendar-date-picker'
 
 interface InspectorFormProps {
   inspector?: Inspector
@@ -64,80 +82,27 @@ interface InspectorFormProps {
   onCancel?: () => void
 }
 
-const inspectorTypeOptions: { value: InspectorType; label: string; description: string }[] = [
-  {
-    value: 'mechanical',
-    label: 'Mechanical Inspector',
-    description: 'Mechanical equipment and systems inspection'
-  },
-  {
-    value: 'corrosion',
-    label: 'Corrosion Inspector',
-    description: 'Corrosion assessment and monitoring'
-  },
-  {
-    value: 'ndt',
-    label: 'NDT Inspector',
-    description: 'Non-destructive testing specialist'
-  },
-  {
-    value: 'electrical',
-    label: 'Electrical Inspector',
-    description: 'Electrical systems and equipment inspection'
-  },
-  {
-    value: 'instrumentation',
-    label: 'Instrumentation Inspector',
-    description: 'Instrumentation and control systems'
-  },
-  {
-    value: 'civil',
-    label: 'Civil Inspector',
-    description: 'Civil and structural inspection'
-  },
-  {
-    value: 'general',
-    label: 'General Inspector',
-    description: 'General purpose inspection'
-  },
-  {
-    value: 'psv_operator',
-    label: 'PSV Operator',
-    description: 'Pressure safety valve operator'
-  },
-  {
-    value: 'lifting_equipment_operator',
-    label: 'Lifting Equipment Operator',
-    description: 'Lifting equipment operation and inspection'
-  }
-]
 
-const departmentOptions = [
-  'Mechanical',
-  'Electrical',
-  'Instrumentation',
-  'Civil',
-  'NDT',
-  'Corrosion',
-  'PSV Operations',
-  'Lifting Equipment',
-  'Quality Control',
-  'Safety',
-  'Engineering',
-  'Maintenance'
-]
-
-// Specialty options removed - no longer needed
 
 export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    inspector?.profileImage || null
-  )
+  const [profileImageUploaded, setProfileImageUploaded] = useState<DocumentInfo | null>(null)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(inspector?.profileImageUrl || null)
+  const [documentRefreshTrigger, setDocumentRefreshTrigger] = useState(0)
+  const [certificateRefreshTrigger, setCertificateRefreshTrigger] = useState(0)
+  const [showRoleModal, setShowRoleModal] = useState(false)
+  const [createdInspector, setCreatedInspector] = useState<Inspector | null>(null)
 
   const isEditing = !!inspector
+  const inspectorName = inspector ? `${inspector.firstName} ${inspector.lastName}` : 'New Inspector'
+
+  // Initialize profile image URL from existing inspector data
+  useEffect(() => {
+    if (inspector?.profileImageUrl && !profileImageUrl) {
+      setProfileImageUrl(inspector.profileImageUrl)
+    }
+  }, [inspector?.profileImageUrl, profileImageUrl])
 
   const form = useForm<InspectorFormData>({
     resolver: zodResolver(inspectorFormSchema),
@@ -148,11 +113,9 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
       nationalId: inspector?.nationalId || '',
       email: inspector?.email || '',
       phone: inspector?.phone || '',
-      department: inspector?.department || '',
       dateOfBirth: inspector?.dateOfBirth || '',
       birthPlace: inspector?.birthPlace || '',
-      maritalStatus: inspector?.maritalStatus || undefined,
-      inspectorType: inspector?.inspectorType || 'INTERNAL',
+      maritalStatus: inspector?.maritalStatus as 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | undefined,
       // specialties field removed - no longer used
       // Education
       educationDegree: inspector?.educationDegree || '',
@@ -174,35 +137,49 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
       baseHourlyRate: inspector?.baseHourlyRate || undefined,
       overtimeMultiplier: inspector?.overtimeMultiplier || 1.5,
       nightShiftMultiplier: inspector?.nightShiftMultiplier || 1.3,
-      onCallMultiplier: inspector?.onCallMultiplier || 2.0,
-      notes: inspector?.notes || ''
+      onCallMultiplier: inspector?.onCallMultiplier || 2.0
     }
   })
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file')
-        return
-      }
+  // Handle profile image upload completion
+  const handleProfileImageUpload = (document: DocumentInfo) => {
+    setProfileImageUploaded(document)
+    setProfileImageUrl(document.download_url) // Update URL for immediate display
+    toast.success('Profile image uploaded successfully')
+  }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image file size must be less than 5MB')
-        return
-      }
+  // Handle document upload completion
+  const handleDocumentUpload = (documents: DocumentInfo[]) => {
+    setDocumentRefreshTrigger(prev => prev + 1)
+    toast.success(`${documents.length} document(s) uploaded successfully`)
+  }
 
-      setProfileImageFile(file)
-      
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setProfileImagePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
+  // Handle document deletion
+  const handleDocumentDeleted = (document: DocumentInfo) => {
+    setDocumentRefreshTrigger(prev => prev + 1)
+    toast.success('Document deleted successfully')
+  }
+
+  // Refresh documents
+  const handleDocumentRefresh = () => {
+    setDocumentRefreshTrigger(prev => prev + 1)
+  }
+
+  // Handle certificate upload completion
+  const handleCertificateUpload = (documents: DocumentInfo[]) => {
+    setCertificateRefreshTrigger(prev => prev + 1)
+    toast.success(`${documents.length} certificate(s) uploaded successfully`)
+  }
+
+  // Handle certificate deletion
+  const handleCertificateDeleted = (document: DocumentInfo) => {
+    setCertificateRefreshTrigger(prev => prev + 1)
+    toast.success('Certificate deleted successfully')
+  }
+
+  // Refresh certificates
+  const handleCertificateRefresh = () => {
+    setCertificateRefreshTrigger(prev => prev + 1)
   }
 
   const onSubmit = async (data: InspectorFormData) => {
@@ -213,12 +190,16 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
       if (isEditing && inspector) {
         result = await updateInspector(inspector.id, data)
         toast.success('Inspector updated successfully')
+        onSuccess?.(result)
       } else {
         result = await createInspector(data)
         toast.success('Inspector created successfully')
+        
+        // For new inspectors, show role assignment modal
+        setCreatedInspector(result)
+        setShowRoleModal(true)
+        return // Don't navigate away yet
       }
-
-      onSuccess?.(result)
       
       if (!onSuccess) {
         router.push('/admin/inspectors')
@@ -243,6 +224,26 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
     }
   }
 
+  const handleRoleModalComplete = () => {
+    setShowRoleModal(false)
+    if (createdInspector) {
+      onSuccess?.(createdInspector)
+      if (!onSuccess) {
+        router.push('/admin/inspectors')
+      }
+    }
+  }
+
+  const handleSkipRoles = () => {
+    setShowRoleModal(false)
+    if (createdInspector) {
+      onSuccess?.(createdInspector)
+      if (!onSuccess) {
+        router.push('/admin/inspectors')
+      }
+    }
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 space-y-6">
       <Form {...form}>
@@ -252,8 +253,12 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="education">Education</TabsTrigger>
               <TabsTrigger value="experience">Experience</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="certificates">Certificates</TabsTrigger>
+              <TabsTrigger value="documents" disabled={!inspector?.id}>
+                Documents {!inspector?.id && '(Save First)'}
+              </TabsTrigger>
+              <TabsTrigger value="certificates" disabled={!inspector?.id}>
+                Certificates {!inspector?.id && '(Save First)'}
+              </TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
@@ -272,50 +277,15 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                 <CardContent className="space-y-6">
                   {/* Profile Image Upload */}
                   <div className="flex items-start gap-6">
-                    <div className="flex flex-col items-center space-y-2 flex-shrink-0">
-                      <div className="w-24 h-24 rounded-full border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden bg-muted">
-                        {profileImagePreview ? (
-                          <img
-                            src={profileImagePreview}
-                            alt="Profile preview"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-8 h-8 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => document.getElementById('profile-image')?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload
-                        </Button>
-                        {profileImagePreview && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setProfileImageFile(null)
-                              setProfileImagePreview(null)
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <input
-                        id="profile-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </div>
+                    <ProfileImageUpload
+                      inspectorId={inspector?.id}
+                      currentImageUrl={profileImageUrl || inspector?.profileImageUrl}
+                      inspectorName={inspectorName}
+                      size="lg"
+                      onUploadComplete={handleProfileImageUpload}
+                      onUploadError={(error) => toast.error(error)}
+                      allowEdit={true}
+                    />
 
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
                       <FormField
@@ -425,63 +395,7 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="department"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Department</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select department" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {departmentOptions.map((dept) => (
-                                  <SelectItem key={dept} value={dept}>
-                                    {dept}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Department or division
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
-                      <FormField
-                        control={form.control}
-                        name="inspectorType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Inspector Type *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select inspector type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {inspectorTypeOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    <div className="flex flex-col">
-                                      <span>{option.label}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {option.description}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </div>
                   </div>
 
@@ -494,14 +408,15 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                         <FormItem>
                           <FormLabel>Date of Birth</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                type="date" 
-                                className="pl-10"
-                                {...field} 
-                              />
-                            </div>
+                            <JalaliDatePicker
+                              date={field.value ? new Date(field.value) : undefined}
+                              onDateChange={(date) => {
+                                field.onChange(date ? date.toISOString().split('T')[0] : undefined)
+                              }}
+                              placeholder="انتخاب تاریخ تولد"
+                              disableFuture={true}
+                              showBothCalendars={true}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -628,7 +543,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                               min="1950"
                               max={new Date().getFullYear()}
                               {...field}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                              value={field.value?.toString() || ''}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                field.onChange(value ? parseInt(value, 10) : undefined)
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -670,7 +589,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                               min="0"
                               max="50"
                               {...field}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                              value={field.value?.toString() || ''}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                field.onChange(value ? parseInt(value, 10) : 0)
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -715,94 +638,300 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
 
             {/* Documents Tab */}
             <TabsContent value="documents" className="w-full mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Documents
-                  </CardTitle>
-                  <CardDescription>
-                    Upload and manage inspector documents
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                      <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <div className="mt-4">
-                        <h3 className="text-sm font-medium">Upload Documents</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          ID Card, Qualifications, Training Records, etc.
+              <div className="space-y-6">
+                {/* Document Upload Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="w-5 h-5" />
+                      Upload Documents
+                    </CardTitle>
+                    <CardDescription>
+                      Upload inspector documents such as ID cards, qualifications, training records, and other relevant files
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {inspector?.id ? (
+                      <FileUpload
+                        inspectorId={inspector.id}
+                        documentType={DocumentType.Other}
+                        multiple={true}
+                        maxFiles={10}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onUploadComplete={handleDocumentUpload}
+                        onUploadError={(error) => toast.error(error)}
+                        className="w-full"
+                      />
+                    ) : (
+                      <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                        <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                          Save Inspector First
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Please save the inspector's basic information before uploading documents.
                         </p>
                       </div>
-                      <Button variant="outline" className="mt-4">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Choose Files
-                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Document Management Section */}
+                {inspector?.id && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Document Management
+                      </CardTitle>
+                      <CardDescription>
+                        View, download, and manage uploaded documents
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DocumentManager
+                        key={documentRefreshTrigger} // Force refresh when documents change
+                        inspectorId={inspector.id}
+                        allowDelete={true}
+                        allowDownload={true}
+                        viewMode="grid"
+                        onDocumentDeleted={handleDocumentDeleted}
+                        onRefresh={handleDocumentRefresh}
+                        className="w-full"
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Document Type Categories */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Document Categories</CardTitle>
+                    <CardDescription>
+                      Organize your documents by category for better management
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium text-foreground mb-2">Identity Documents</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• National ID Card</li>
+                          <li>• Passport</li>
+                          <li>• Birth Certificate</li>
+                          <li>• Military Service Record</li>
+                        </ul>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium text-foreground mb-2">Qualifications</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Educational Certificates</li>
+                          <li>• Professional Licenses</li>
+                          <li>• Training Certificates</li>
+                          <li>• Work Experience Letters</li>
+                        </ul>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <h4 className="font-medium text-foreground mb-2">Other Documents</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          <li>• Medical Records</li>
+                          <li>• Insurance Documents</li>
+                          <li>• Bank Information</li>
+                          <li>• Contract Documents</li>
+                        </ul>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Supported formats: PDF, JPG, PNG. Maximum file size: 10MB per file.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* Certificates Tab */}
             <TabsContent value="certificates" className="w-full mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Badge className="w-5 h-5" />
-                    Professional Certifications
-                  </CardTitle>
-                  <CardDescription>
-                    Manage API 510, API 570, CSWIP, NACE, ASNT and other certifications
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                      <Badge className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <div className="mt-4">
-                        <h3 className="text-sm font-medium">Certificate Management</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Add certifications: API 510, API 570, API 653, CSWIP, NACE, ASNT, IWI, LEEA
+              <div className="space-y-6">
+                {/* Certificate Upload Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="w-5 h-5" />
+                      Upload Certificates
+                    </CardTitle>
+                    <CardDescription>
+                      Upload professional certifications such as API 510, API 570, CSWIP, NACE, ASNT and other inspection certifications
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {inspector?.id ? (
+                      <FileUpload
+                        inspectorId={inspector.id}
+                        documentType={DocumentType.Certificate}
+                        multiple={true}
+                        maxFiles={10}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onUploadComplete={handleCertificateUpload}
+                        onUploadError={(error) => toast.error(error)}
+                        className="w-full"
+                      />
+                    ) : (
+                      <div className="text-center py-8 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                        <Award className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                          Save Inspector First
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Please save the inspector's basic information before uploading certificates.
                         </p>
                       </div>
-                      <Button variant="outline" className="mt-4" disabled>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Certificate
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Certificate management will be implemented in a future update
-                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Certificate Management Section */}
+                {inspector?.id && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Badge className="w-5 h-5" />
+                        Certificate Management
+                      </CardTitle>
+                      <CardDescription>
+                        View, download, and manage uploaded certificates with expiry tracking
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DocumentManager
+                        key={`certificates-${certificateRefreshTrigger}`} // Force refresh when certificates change
+                        inspectorId={inspector.id}
+                        documentType={DocumentType.Certificate}
+                        allowDelete={true}
+                        allowDownload={true}
+                        viewMode="grid"
+                        onDocumentDeleted={handleCertificateDeleted}
+                        onRefresh={handleCertificateRefresh}
+                        className="w-full"
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Certificate Guidelines */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      Certification Guidelines
+                    </CardTitle>
+                    <CardDescription>
+                      Important information about professional certifications and requirements
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Expiry Alert */}
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Important:</strong> Please ensure all certificates are valid and not expired. 
+                          Upload clear, high-quality scans or photos of your certificates for verification.
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* Certificate Categories */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                            <Badge className="w-4 h-4" />
+                            API Certifications
+                          </h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• API 510 - Pressure Vessel Inspector</li>
+                            <li>• API 570 - Piping Inspector</li>
+                            <li>• API 653 - Above Ground Storage Tank</li>
+                            <li>• API 580 - Risk-Based Inspection</li>
+                            <li>• API 571 - Corrosion and Materials</li>
+                          </ul>
+                        </div>
+
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                            <Award className="w-4 h-4" />
+                            Welding & NDT
+                          </h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• CSWIP - Welding Inspector</li>
+                            <li>• IWI - International Welding Inspector</li>
+                            <li>• ASNT - Non-Destructive Testing</li>
+                            <li>• PCN - Personnel Certification in NDT</li>
+                            <li>• AWS - American Welding Society</li>
+                          </ul>
+                        </div>
+
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
+                            Other Specializations
+                          </h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• NACE - Corrosion Engineer</li>
+                            <li>• LEEA - Lifting Equipment Engineer</li>
+                            <li>• NEBOSH - Safety Certification</li>
+                            <li>• IOSH - Occupational Safety</li>
+                            <li>• ISO Lead Auditor</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
-                      <div>
-                        <h4 className="font-medium text-foreground mb-2">API Certifications</h4>
-                        <ul className="space-y-1">
-                          <li>• API 510 - Pressure Vessel Inspector</li>
-                          <li>• API 570 - Piping Inspector</li>
-                          <li>• API 653 - Above Ground Storage Tank</li>
-                          <li>• API 580 - Risk-Based Inspection</li>
-                          <li>• API 571 - Corrosion and Materials</li>
+                  </CardContent>
+                </Card>
+
+                {/* Certificate Validity Tracking */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      Certificate Validity & Renewal
+                    </CardTitle>
+                    <CardDescription>
+                      Track certificate expiry dates and renewal requirements
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                          <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Valid Certificates
+                          </h4>
+                          <p className="text-sm text-green-700">
+                            Certificates that are currently valid and accepted for inspection work.
+                          </p>
+                        </div>
+
+                        <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                          <h4 className="font-medium text-yellow-800 mb-2 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" />
+                            Expiring Soon
+                          </h4>
+                          <p className="text-sm text-yellow-700">
+                            Certificates expiring within 60 days. Plan renewal to avoid interruption.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+                        <h4 className="font-medium text-blue-800 mb-2">Renewal Reminders</h4>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li>• API certifications: Renewed every 3 years with required training</li>
+                          <li>• CSWIP certifications: Renewed every 5 years with reassessment</li>
+                          <li>• NACE certifications: Renewed every 5 years with continuing education</li>
+                          <li>• ASNT certifications: Renewed every 5 years with requalification</li>
                         </ul>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-foreground mb-2">Other Certifications</h4>
-                        <ul className="space-y-1">
-                          <li>• CSWIP - Welding Inspector</li>
-                          <li>• NACE - Corrosion Engineer</li>
-                          <li>• ASNT - Non-Destructive Testing</li>
-                          <li>• IWI - International Welding Inspector</li>
-                          <li>• LEEA - Lifting Equipment Engineer</li>
-                        </ul>
-                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* Settings Tab */}
@@ -992,33 +1121,8 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                 </Card>
 
                 <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Roles & Authorization</CardTitle>
-                      <CardDescription>
-                        Assign roles for system access control
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                        <Settings className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <div className="mt-4">
-                          <h3 className="text-sm font-medium">Role Management</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Roles control access to PSV calibration, corrosion analysis, and crane inspection features
-                          </p>
-                        </div>
-                        <Button variant="outline" className="mt-4" disabled>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Assign Roles
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Role management will be implemented in a future update
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
+                  {/* Role assignment removed from form - will be handled in post-creation modal */}
+                  
                   <Card>
                     <CardHeader>
                       <CardTitle>Payroll Settings</CardTitle>
@@ -1040,7 +1144,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                                 min="0"
                                 placeholder="45.00"
                                 {...field}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                value={field.value?.toString() || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  field.onChange(value ? parseFloat(value) : undefined)
+                                }}
                               />
                             </FormControl>
                             <FormDescription>
@@ -1066,7 +1174,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                                   max="5"
                                   placeholder="1.5"
                                   {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  value={field.value?.toString() || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    field.onChange(value ? parseFloat(value) : undefined)
+                                  }}
                                 />
                               </FormControl>
                               <FormDescription>
@@ -1091,7 +1203,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                                   max="5"
                                   placeholder="1.3"
                                   {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  value={field.value?.toString() || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    field.onChange(value ? parseFloat(value) : undefined)
+                                  }}
                                 />
                               </FormControl>
                               <FormDescription>
@@ -1116,7 +1232,11 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
                                   max="5"
                                   placeholder="2.0"
                                   {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  value={field.value?.toString() || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    field.onChange(value ? parseFloat(value) : undefined)
+                                  }}
                                 />
                               </FormControl>
                               <FormDescription>
@@ -1151,6 +1271,46 @@ export function InspectorForm({ inspector, onSuccess, onCancel }: InspectorFormP
           </div>
         </form>
       </Form>
+      
+      {/* Role Assignment Modal */}
+      <Dialog open={showRoleModal} onOpenChange={setShowRoleModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Assign Roles to {createdInspector ? `${createdInspector.firstName} ${createdInspector.lastName}` : 'Inspector'}
+            </DialogTitle>
+            <DialogDescription>
+              The inspector has been created successfully. You can now assign roles to control their system access.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {createdInspector && (
+            <InspectorRoleManagement
+              inspectorId={createdInspector.id}
+              inspectorName={`${createdInspector.firstName} ${createdInspector.lastName}`}
+              onRolesChanged={(roles) => {
+                console.log('Roles updated:', roles)
+              }}
+              className="w-full"
+            />
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={handleSkipRoles}
+            >
+              Skip for Now
+            </Button>
+            <Button
+              onClick={handleRoleModalComplete}
+            >
+              Complete Setup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

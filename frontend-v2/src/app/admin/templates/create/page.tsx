@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { TemplateBuilderContainer } from '@/components/admin/templates/template-builder-container'
-import { AdminErrorBoundary } from '@/components/admin/shared/admin-error-boundary'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 export const metadata: Metadata = {
   title: 'Create Template | Admin Panel',
@@ -9,8 +10,17 @@ export const metadata: Metadata = {
 
 export default function CreateTemplatePage() {
   return (
-    <AdminErrorBoundary>
-      <TemplateBuilderContainer />
-    </AdminErrorBoundary>
+    <DashboardLayout 
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Admin Panel', href: '/admin' },
+        { label: 'Templates', href: '/admin/templates' },
+        { label: 'Create Template', current: true }
+      ]}
+    >
+      <ErrorBoundary>
+        <TemplateBuilderContainer />
+      </ErrorBoundary>
+    </DashboardLayout>
   )
 }

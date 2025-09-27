@@ -49,7 +49,7 @@ export function PermissionSelect({
       </SelectTrigger>
       <SelectContent>
         {filteredOptions.length === 0 ? (
-          <SelectItem value="" disabled>
+          <SelectItem value="__empty__" disabled>
             {emptyMessage}
           </SelectItem>
         ) : (

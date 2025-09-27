@@ -12,7 +12,7 @@ import {
   useImportTemplate
 } from '@/hooks/admin/use-templates'
 import { ReportTemplate } from '@/types/admin'
-import { AdminErrorBoundary } from '../shared/admin-error-boundary'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 
 export function TemplateManagement() {
   const router = useRouter()
@@ -74,7 +74,7 @@ export function TemplateManagement() {
   }
 
   return (
-    <AdminErrorBoundary>
+    <ErrorBoundary>
       <TemplateList
         templates={templates}
         loading={isLoading}
@@ -86,6 +86,6 @@ export function TemplateManagement() {
         onImport={handleImport}
         onViewUsageStats={handleViewUsageStats}
       />
-    </AdminErrorBoundary>
+    </ErrorBoundary>
   )
 }

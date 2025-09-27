@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -76,6 +76,10 @@ export default function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const { login, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get the redirect URL from search params, default to dashboard
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -85,13 +89,14 @@ export default function LoginPage() {
     },
   });
 
-  // Redirect to dashboard when user becomes authenticated
+  // Redirect to intended page when user becomes authenticated
   useEffect(() => {
     if (isAuthenticated && !isRedirecting) {
       setIsRedirecting(true);
-      router.push('/dashboard');
+      console.log('🔄 Redirecting to:', redirectUrl);
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, router, isRedirecting]);
+  }, [isAuthenticated, router, isRedirecting, redirectUrl]);
 
   // Rotate features every 4 seconds
   useEffect(() => {
@@ -107,7 +112,7 @@ export default function LoginPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span>Redirecting to dashboard...</span>
+          <span>Redirecting to {redirectUrl === '/dashboard' ? 'dashboard' : 'requested page'}...</span>
         </div>
       </div>
     );
@@ -118,10 +123,12 @@ export default function LoginPage() {
     try {
       await login(data);
       // Show success message
-      toast.success('Login successful! Redirecting to dashboard...');
-      // Immediately redirect after successful login
+      const targetPage = redirectUrl === '/dashboard' ? 'dashboard' : 'requested page';
+      toast.success(`Login successful! Redirecting to ${targetPage}...`);
+      // Redirect to the intended page after successful login
       setIsRedirecting(true);
-      router.push('/dashboard');
+      console.log('🔄 Login successful, redirecting to:', redirectUrl);
+      router.push(redirectUrl);
     } catch (error) {
       console.error('Login failed:', error);
       

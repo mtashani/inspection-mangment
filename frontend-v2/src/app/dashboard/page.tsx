@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { useDashboardData } from '@/hooks/use-dashboard';
-import { ProtectedRoute } from '@/components/protected-route';
 import {
   Card,
   CardContent,
@@ -31,13 +30,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout 
-        breadcrumbs={[
-          { label: 'Inspection Management', href: '/dashboard' },
-          { label: 'Dashboard', current: true }
-        ]}
-      >
+    <DashboardLayout 
+      breadcrumbs={[
+        { label: 'Inspection Management', href: '/dashboard' },
+        { label: 'Dashboard', current: true }
+      ]}
+    >
           {/* Welcome Section */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
@@ -311,6 +309,5 @@ export default function DashboardPage() {
             </Card>
           </div>
       </DashboardLayout>
-    </ProtectedRoute>
   );
 }

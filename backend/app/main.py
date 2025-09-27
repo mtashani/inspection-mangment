@@ -1,19 +1,21 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
+import logging
 
 from app.core.config import settings
 from app.database import create_db_and_tables
 
 # Import all models to ensure they are registered with SQLAlchemy
+# Import models in the correct order to avoid circular dependencies
 from app.domains.inspector.models.inspector import Inspector, InspectorCertificationRecord
+from app.domains.inspector.models.documents import InspectorDocument
 from app.domains.inspection.models.inspection import Inspection
 from app.domains.inspection.models.inspection_team import InspectionTeam
 from app.domains.maintenance.models.event import MaintenanceEvent, MaintenanceSubEvent
 from app.domains.equipment.models.equipment import Equipment
-
-# Remove auth router temporarily to avoid db session issues
-# from app.domains.auth.api.auth import router as auth_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -48,8 +50,14 @@ except Exception as e:
 try:
     # Core Inspector Management
     from app.domains.inspector.api.inspector import router as inspector_router
+    from app.domains.inspector.api.certificates import router as inspector_certificates_router
+    from app.domains.inspector.api.documents import router as inspector_documents_router
+    from app.domains.inspector.api.logs import router as inspector_logs_router
 
     app.include_router(inspector_router, prefix=f"{settings.API_V1_STR}/inspectors", tags=["Inspectors"])
+    app.include_router(inspector_certificates_router, prefix=f"{settings.API_V1_STR}/inspector", tags=["Inspector Certificates"])
+    app.include_router(inspector_documents_router, prefix=f"{settings.API_V1_STR}/inspector", tags=["Inspector Documents"])
+    app.include_router(inspector_logs_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Logging Management"])
 
     
     # Inspector Attendance Hub (with integrated analytics and reports)
@@ -70,6 +78,9 @@ try:
     
     print("✅ Inspector domain routers loaded successfully (Inspector-Centric Structure)")
     print(f"🔗 Inspector Management: {settings.API_V1_STR}/inspectors")
+    print(f"🔗 Inspector Files: {settings.API_V1_STR}/inspector")
+    print(f"🔗 Inspector Certificates: {settings.API_V1_STR}/inspector/certificates")
+    print(f"🔗 Inspector Documents: {settings.API_V1_STR}/inspector/documents")
     print(f"🔗 Inspector Attendance: {settings.API_V1_STR}/inspectors/attendance")
     print(f"🔗 Inspector Attendance Analytics: {settings.API_V1_STR}/inspectors/attendance/analytics")
     print(f"🔗 Inspector Attendance Reports: {settings.API_V1_STR}/inspectors/attendance/reports")
@@ -209,10 +220,67 @@ except Exception as e:
 
 print("🎉 All available routers loaded!")
 
+# Add global exception handlers for better error messages
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle Pydantic validation errors globally"""
+    logging.error(f"Validation error on {request.method} {request.url.path}: {exc.errors()}")
+    
+    error_details = []
+    for error in exc.errors():
+        field = '.'.join(str(loc) for loc in error['loc']) if error['loc'] else 'unknown'
+        message = error['msg']
+        input_value = error.get('input', 'N/A')
+        error_details.append({
+            "field": field,
+            "message": message,
+            "input_value": str(input_value)[:100] if input_value != 'N/A' else 'N/A'  # Limit length
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "message": "Validation failed",
+            "errors": error_details,
+            "type": "validation_error",
+            "url": str(request.url.path)
+        }
+    )
+
+@app.exception_handler(ValidationError)
+async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
+    """Handle Pydantic validation errors from models"""
+    logging.error(f"Pydantic validation error on {request.method} {request.url.path}: {exc.errors()}")
+    
+    error_details = []
+    for error in exc.errors():
+        field = '.'.join(str(loc) for loc in error['loc']) if error['loc'] else 'unknown'
+        message = error['msg']
+        error_details.append({
+            "field": field,
+            "message": message
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "message": "Model validation failed",
+            "errors": error_details,
+            "type": "pydantic_validation_error",
+            "url": str(request.url.path)
+        }
+    )
+
 # Initialize database tables
 @app.on_event("startup")
 async def startup_event():
-    create_db_and_tables()
+    try:
+        create_db_and_tables()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        print(f"❌ Failed to create database tables: {e}")
+        import traceback
+        traceback.print_exc()
 
 # Health check endpoint
 @app.get("/health", tags=["health"])

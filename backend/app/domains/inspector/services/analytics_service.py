@@ -174,7 +174,6 @@ class AnalyticsService:
                 "inspector_id": inspector.id,
                 "inspector_name": f"{inspector.first_name} {inspector.last_name}",
                 "employee_id": inspector.employee_id,
-                "department": inspector.department,
                 "attendance_rate": round(attendance_rate, 1),
                 "working_days": working_days,
                 "total_days": total_days,

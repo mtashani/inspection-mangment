@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 from app.database import get_session as get_db
-from app.domains.auth.dependencies import require_permission
+from app.domains.auth.dependencies import require_standardized_permission
 from app.domains.admin.schemas import (
     InspectorRoleAssignment, BulkInspectorRoleAssignment, InspectorRolesResponse,
     RoleResponse, SuccessResponse, ErrorResponse
@@ -24,7 +24,7 @@ async def assign_roles_to_inspector(
     inspector_id: int,
     assignment_data: InspectorRoleAssignment,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "manage_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Assign roles to an inspector (bulk assignment).
@@ -74,7 +74,12 @@ async def assign_roles_to_inspector(
         db.commit()
         
         # Invalidate inspector's permission cache
-        await PermissionService.invalidate_inspector_cache(inspector_id)
+        try:
+            from app.domains.auth.services.cache_service import CacheService
+            await CacheService.invalidate_inspector_cache(inspector_id)
+        except Exception as cache_error:
+            # Log cache invalidation error but don't fail the operation
+            logging.warning(f"Cache invalidation failed for inspector {inspector_id}: {cache_error}")
         
         logging.info(
             f"Inspector {inspector_id} roles updated by inspector {current_inspector.id}. "
@@ -101,7 +106,7 @@ async def add_role_to_inspector(
     inspector_id: int,
     role_id: int,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "manage_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Add a single role to an inspector.
@@ -152,7 +157,12 @@ async def add_role_to_inspector(
         db.commit()
         
         # Invalidate inspector's permission cache
-        await PermissionService.invalidate_inspector_cache(inspector_id)
+        try:
+            from app.domains.auth.services.cache_service import CacheService
+            await CacheService.invalidate_inspector_cache(inspector_id)
+        except Exception as cache_error:
+            # Log cache invalidation error but don't fail the operation
+            logging.warning(f"Cache invalidation failed for inspector {inspector_id}: {cache_error}")
         
         logging.info(
             f"Role {role_id} added to inspector {inspector_id} by inspector {current_inspector.id}"
@@ -178,7 +188,7 @@ async def remove_role_from_inspector(
     inspector_id: int,
     role_id: int,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "manage_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Remove a specific role from an inspector.
@@ -222,7 +232,12 @@ async def remove_role_from_inspector(
         db.commit()
         
         # Invalidate inspector's permission cache
-        await PermissionService.invalidate_inspector_cache(inspector_id)
+        try:
+            from app.domains.auth.services.cache_service import CacheService
+            await CacheService.invalidate_inspector_cache(inspector_id)
+        except Exception as cache_error:
+            # Log cache invalidation error but don't fail the operation
+            logging.warning(f"Cache invalidation failed for inspector {inspector_id}: {cache_error}")
         
         logging.info(
             f"Role {role_id} removed from inspector {inspector_id} by inspector {current_inspector.id}"
@@ -247,7 +262,7 @@ async def remove_role_from_inspector(
 async def get_inspector_roles(
     inspector_id: int,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "view_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get all roles assigned to an inspector.
@@ -263,7 +278,9 @@ async def get_inspector_roles(
                 detail=f"Inspector with ID {inspector_id} not found"
             )
         
-        # Get all roles for this inspector
+        # Get all roles for this inspector with their permissions
+        from app.domains.inspector.models.authorization import Permission, RolePermission
+        
         roles = db.exec(
             select(Role)
             .join(InspectorRole, InspectorRole.role_id == Role.id)
@@ -271,10 +288,32 @@ async def get_inspector_roles(
             .order_by(Role.name)
         ).all()
         
+        # Build role responses with proper permission names
+        role_responses = []
+        for role in roles:
+            # Get permission names for this role
+            permission_names = db.exec(
+                select(Permission.name)
+                .join(RolePermission, RolePermission.permission_id == Permission.id)
+                .where(RolePermission.role_id == role.id)
+            ).all()
+            
+            # Create RoleResponse with permission names as strings
+            role_response = RoleResponse(
+                id=role.id,
+                name=role.name,
+                description=role.description,
+                display_label=role.display_label,
+                created_at=role.created_at,
+                updated_at=role.updated_at,
+                permissions=list(permission_names)
+            )
+            role_responses.append(role_response)
+        
         return InspectorRolesResponse(
             inspector_id=inspector_id,
             inspector_name=inspector.get_full_name(),
-            roles=[RoleResponse.from_orm(role) for role in roles]
+            roles=role_responses
         )
         
     except HTTPException:
@@ -291,7 +330,7 @@ async def get_inspector_roles(
 async def bulk_assign_roles_to_inspectors(
     assignment_data: BulkInspectorRoleAssignment,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "manage_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Assign roles to multiple inspectors (bulk operation).
@@ -355,8 +394,13 @@ async def bulk_assign_roles_to_inspectors(
         db.commit()
         
         # Invalidate caches for all affected inspectors
-        for inspector_id in assignment_data.inspector_ids:
-            await PermissionService.invalidate_inspector_cache(inspector_id)
+        try:
+            from app.domains.auth.services.cache_service import CacheService
+            for inspector_id in assignment_data.inspector_ids:
+                await CacheService.invalidate_inspector_cache(inspector_id)
+        except Exception as cache_error:
+            # Log cache invalidation error but don't fail the operation
+            logging.warning(f"Cache invalidation failed for inspectors: {cache_error}")
         
         logging.info(
             f"Bulk role assignment by inspector {current_inspector.id}. "
@@ -385,7 +429,7 @@ async def bulk_assign_roles_to_inspectors(
 async def get_available_roles_for_inspector(
     inspector_id: int,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "view_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get roles that are not yet assigned to an inspector.
@@ -443,7 +487,7 @@ async def get_available_roles_for_inspector(
 async def get_inspector_effective_permissions(
     inspector_id: int,
     db: Session = Depends(get_db),
-    current_inspector: Inspector = Depends(require_permission("admin", "view_users"))
+    current_inspector: Inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get all effective permissions for an inspector (aggregated from all their roles).

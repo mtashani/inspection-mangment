@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from sqlmodel import Session
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_active_inspector, require_permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
 from app.domains.inspector.services.dashboard_service import DashboardService
 from app.domains.inspector.schemas.dashboard import (
     DashboardStatsResponse,
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/dashboard", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get real-time dashboard statistics for admin panel.
@@ -35,7 +35,7 @@ async def get_dashboard_stats(
 @router.get("/dashboard/today-attendance", response_model=TodayAttendanceResponse)
 async def get_today_attendance(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get today's attendance summary across all inspectors.
@@ -54,7 +54,7 @@ async def get_monthly_overview(
     jalali_year: int = Query(..., description="Jalali year"),
     jalali_month: int = Query(..., description="Jalali month (1-12)"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get monthly attendance overview for all inspectors.
@@ -78,7 +78,7 @@ async def get_monthly_overview(
 async def get_recent_activities(
     limit: int = Query(10, ge=1, le=50, description="Number of recent activities to retrieve"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get recent attendance activities and changes.
@@ -100,7 +100,7 @@ async def get_recent_activities(
 @router.get("/system-health")
 async def system_health_check(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Health check endpoint for admin system services.
@@ -138,7 +138,7 @@ async def system_health_check(
 @router.get("/dashboard/quick-stats")
 async def get_quick_stats(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get quick statistics for dashboard widgets.
@@ -163,7 +163,7 @@ async def get_quick_stats(
 async def execute_bulk_operations(
     operations: dict,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Execute bulk administrative operations.
@@ -184,7 +184,7 @@ async def execute_bulk_operations(
 async def get_audit_logs(
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get audit logs for admin review.
@@ -207,7 +207,7 @@ async def get_audit_logs(
 async def get_inspector_current_status(
     inspector_id: int,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get current status of a specific inspector for dashboard display.
@@ -236,7 +236,6 @@ async def get_inspector_current_status(
             "inspector_id": inspector_id,
             "inspector_name": f"{inspector.first_name} {inspector.last_name}",
             "employee_id": inspector.employee_id,
-            "department": inspector.department,
             "attendance_enabled": inspector.attendance_tracking_enabled,
             "today_status": today_record.status.value if today_record else "NOT_RECORDED",
             "today_hours": today_record.regular_hours if today_record else 0,
@@ -252,7 +251,7 @@ async def get_inspector_current_status(
 @router.get("/dashboard/department-summary")
 async def get_department_summary(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get attendance summary grouped by department for dashboard overview.

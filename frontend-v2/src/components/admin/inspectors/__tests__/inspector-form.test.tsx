@@ -91,9 +91,6 @@ describe('InspectorForm', () => {
   })
 
   // Test for specialties removed - no longer applicable
-    
-    expect(psvCheckbox).toBeChecked()
-  })
 
   it('handles image upload', () => {
     render(<InspectorForm />, { wrapper: createWrapper() })

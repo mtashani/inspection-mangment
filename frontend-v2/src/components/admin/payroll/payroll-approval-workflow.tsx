@@ -323,8 +323,9 @@ export function PayrollApprovalWorkflow({
       </Card>
     </div>
   )
-}inte
-rface ApprovalDialogProps {
+}
+
+interface ApprovalDialogProps {
   step: ApprovalWorkflowStep
   actionType: 'approve' | 'reject'
   comments: string

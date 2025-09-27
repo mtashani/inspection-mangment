@@ -15,6 +15,7 @@ class UserInfo(BaseModel):
     email: str
     name: str
     roles: List[str]
+    permissions: Optional[List[str]] = []
     is_active: bool
     employee_id: str
 

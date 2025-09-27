@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Auth Test</title>
+</head>
+<body>
+    <h1>Frontend Authentication Test</h1>
+    <div>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testPermissions()">Test Permissions API</button>
+        <button onclick="testInspectors()">Test Inspectors API</button>
+    </div>
+    <div id="results" style="margin-top: 20px; white-space: pre-wrap;"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let token = null;
+
+        function log(message) {
+            document.getElementById('results').textContent += message + '\n';
+        }
+
+        async function testLogin() {
+            log('=== Testing Login ===');
+            try {
+                const formData = new FormData();
+                formData.append('username', 'admin');
+                formData.append('password', 'admin123');
+
+                const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                log(`Login Response: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    log('Login successful! Token received.');
+                    localStorage.setItem('access_token', token);
+                } else {
+                    const error = await response.text();
+                    log(`Login failed: ${error}`);
+                }
+            } catch (error) {
+                log(`Login error: ${error.message}`);
+            }
+        }
+
+        async function testPermissions() {
+            log('\n=== Testing Permissions API ===');
+            if (!token) {
+                token = localStorage.getItem('access_token');
+                if (!token) {
+                    log('No token available. Please login first.');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/admin/permissions?page=1&page_size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`Permissions Response: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`Success! Found ${data.permissions.length} permissions of ${data.total} total`);
+                    if (data.permissions.length > 0) {
+                        log(`First permission: ${data.permissions[0].name}`);
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`Permissions failed: ${error}`);
+                }
+            } catch (error) {
+                log(`Permissions error: ${error.message}`);
+            }
+        }
+
+        async function testInspectors() {
+            log('\n=== Testing Inspectors API ===');
+            if (!token) {
+                token = localStorage.getItem('access_token');
+                if (!token) {
+                    log('No token available. Please login first.');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/inspectors?page=1&page_size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`Inspectors Response: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`Success! Found ${data.length} inspectors`);
+                    if (data.length > 0) {
+                        log(`First inspector: ${data[0].name || data[0].username}`);
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`Inspectors failed: ${error}`);
+                }
+            } catch (error) {
+                log(`Inspectors error: ${error.message}`);
+            }
+        }
+
+        // Test login on page load
+        window.onload = function() {
+            log('Testing authentication flow...\n');
+        };
+    </script>
+</body>
+</html>

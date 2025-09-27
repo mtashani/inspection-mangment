@@ -46,7 +46,7 @@ class RBICalculationRequest(BaseModel):
     calculation_context: Optional[Dict[str, Any]] = Field(None, description="Additional calculation context")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "equipment_id": "101-E-401A",
                 "equipment_data": {
@@ -91,7 +91,7 @@ class ConfigurationRequest(BaseModel):
     validate_only: bool = Field(False, description="Only validate without applying changes")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "configuration_updates": {
                     "scoring_tables": {
@@ -118,7 +118,7 @@ class ReportRequest(BaseModel):
     include_recommendations: bool = Field(True, description="Include recommendations")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "equipment_id": "101-E-401A",
                 "report_format": "json",
@@ -147,7 +147,7 @@ class ParameterAdjustmentRequest(BaseModel):
     adjustment_reason: Optional[str] = Field(None, description="Reason for parameter adjustment")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "equipment_id": "101-E-401A",
                 "current_parameters": {
@@ -174,7 +174,7 @@ class RBICalculationResponse(BaseModel):
     warnings: Optional[List[str]] = Field(None, description="Calculation warnings")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "success": True,
                 "calculation_result": {
@@ -256,7 +256,7 @@ class ErrorResponse(BaseModel):
     request_id: Optional[str] = Field(None, description="Request ID for tracking")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "success": False,
                 "error_code": 400,

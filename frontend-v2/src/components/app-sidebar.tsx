@@ -11,6 +11,8 @@ import {
   Calendar,
   AlertTriangle,
   Settings,
+  DollarSign,
+  Upload,
 } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -25,6 +27,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/auth-context';
+import { usePermissions } from '@/contexts/permission-context';
 
 // This is sample data for the sidebar
 const data = {
@@ -170,10 +173,71 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
+  const { hasPermission } = usePermissions();
+
+  // Filter navigation items based on permissions
+  const getFilteredNavItems = React.useMemo(() => {
+    const filteredItems = [...data.navMain];
+
+    // Add admin navigation items if user has admin permissions
+    if (hasPermission('system', 'hr_manage') || hasPermission('system', 'superadmin')) {
+      const adminItems = [
+        {
+          title: 'Administration',
+          url: '#',
+          icon: Shield,
+          items: [
+            {
+              title: 'Admin Dashboard',
+              url: '/admin',
+            },
+            ...(hasPermission('system', 'hr_manage') ? [
+              {
+                title: 'Inspectors',
+                url: '/admin/inspectors',
+              },
+              {
+                title: 'Attendance',
+                url: '/admin/attendance',
+              },
+              {
+                title: 'Payroll',
+                url: '/admin/payroll',
+              },
+            ] : []),
+            ...(hasPermission('system', 'superadmin') ? [
+              {
+                title: 'RBAC Management',
+                url: '/admin/rbac',
+              },
+              {
+                title: 'Templates',
+                url: '/admin/templates',
+              },
+              {
+                title: 'Bulk Operations',
+                url: '/admin/bulk-operations',
+              },
+              {
+                title: 'Settings',
+                url: '/admin/settings',
+              },
+            ] : []),
+          ],
+        },
+      ];
+
+      // Insert admin items after Dashboard
+      filteredItems.splice(1, 0, ...adminItems);
+    }
+
+    return filteredItems;
+  }, [hasPermission]);
 
   // Update user data with actual auth data
   const sidebarData = {
     ...data,
+    navMain: getFilteredNavItems,
     user: {
       name: user?.name || 'User',
       email: user?.email || 'user@inspection.com',

@@ -7,6 +7,7 @@ from app.domains.admin.api.roles import router as roles_router
 from app.domains.admin.api.permissions import router as permissions_router
 from app.domains.admin.api.role_permissions import router as role_permissions_router
 from app.domains.admin.api.inspector_roles import router as inspector_roles_router
+from app.domains.admin.api.rbac_analytics import router as rbac_analytics_router
 
 # Create main admin router
 router = APIRouter()
@@ -17,3 +18,4 @@ router.include_router(roles_router, tags=["Admin - Roles"])
 router.include_router(permissions_router, tags=["Admin - Permissions"])
 router.include_router(role_permissions_router, tags=["Admin - Role Permissions"])
 router.include_router(inspector_roles_router, tags=["Admin - Inspector Roles"])
+router.include_router(rbac_analytics_router, prefix="/rbac/analytics", tags=["Admin - RBAC Analytics"])

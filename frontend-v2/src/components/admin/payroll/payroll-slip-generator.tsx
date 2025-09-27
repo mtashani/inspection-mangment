@@ -115,8 +115,9 @@ interface PayrollRecordItemProps {
   record: PayrollRecord
   isSelected: boolean
   onToggle: () => void
-}function Pa
-yrollRecordItem({ record, isSelected, onToggle }: PayrollRecordItemProps) {
+}
+
+function PayrollRecordItem({ record, isSelected, onToggle }: PayrollRecordItemProps) {
   return (
     <div 
       className={`p-4 border rounded-lg cursor-pointer transition-colors ${

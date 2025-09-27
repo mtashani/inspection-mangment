@@ -1,8 +1,19 @@
 from datetime import datetime, date
 from typing import Optional, List
+from datetime import datetime, date
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, JSON, String
 from app.domains.inspector.models.enums import InspectorCertification, CertificationLevel
+
+# Use TYPE_CHECKING to avoid circular imports
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.domains.inspector.models.authorization import InspectorRole
+    from app.domains.inspector.models.documents import InspectorDocument
+    from app.domains.notifications.models.notification import Notification, NotificationPreference
+    from app.domains.inspection.models.inspection_team import InspectionTeam
+
 
 class Inspector(SQLModel, table=True):
     """Model for inspector information"""
@@ -25,7 +36,7 @@ class Inspector(SQLModel, table=True):
     graduation_year: Optional[int] = None
     
     # Experience and qualifications
-    years_experience: int
+    years_experience: Optional[int] = None
     previous_companies: List[str] = Field(default=[], sa_column=Column(JSON))
     
     # Status and authentication
@@ -44,7 +55,7 @@ class Inspector(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
+    # Relationships - using string annotations to avoid circular imports
     certifications: List["InspectorCertificationRecord"] = Relationship(back_populates="inspector")
     roles: List["InspectorRole"] = Relationship(back_populates="inspector")
     documents: List["InspectorDocument"] = Relationship(back_populates="inspector")
@@ -95,7 +106,4 @@ class InspectorCertificationRecord(SQLModel, table=True):
 
 
 # Import at the end to avoid circular imports
-from app.domains.inspector.models.authorization import InspectorRole
-from app.domains.inspector.models.documents import InspectorDocument
-from app.domains.notifications.models.notification import Notification, NotificationPreference
-from app.domains.inspection.models.inspection_team import InspectionTeam
+# Using TYPE_CHECKING above instead for better type safety

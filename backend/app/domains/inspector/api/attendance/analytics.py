@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional, List
 from sqlmodel import Session
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_active_inspector, require_permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
 from app.domains.inspector.services.analytics_service import AnalyticsService
 from app.domains.inspector.schemas.analytics import (
     AttendanceOverviewResponse,
@@ -11,15 +11,17 @@ from app.domains.inspector.schemas.analytics import (
     PerformanceMetricsResponse,
     AutomatedInsightsResponse
 )
+from app.core.api_logging import log_api_errors
 
 router = APIRouter()
 
 
+@log_api_errors("inspector")
 @router.get("/overview", response_model=AttendanceOverviewResponse)
 async def get_attendance_overview(
     timeframe: str = Query("current_month", description="Time period: current_month, last_30_days, current_week"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get comprehensive inspector attendance overview analytics.
@@ -38,12 +40,13 @@ async def get_attendance_overview(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve attendance overview: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/trends", response_model=AttendanceTrendsResponse)
 async def get_attendance_trends(
     jalali_year: int = Query(..., description="Jalali year for trend analysis"),
     jalali_month: int = Query(..., description="Jalali month (1-12) for trend analysis"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Calculate inspector attendance trends for a specific Jalali month.
@@ -63,12 +66,13 @@ async def get_attendance_trends(
         raise HTTPException(status_code=500, detail=f"Failed to calculate attendance trends: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/performance", response_model=PerformanceMetricsResponse)
 async def get_performance_metrics(
     inspector_ids: Optional[List[int]] = Query(None, description="Specific inspector IDs to analyze"),
     timeframe: str = Query("current_month", description="Analysis period: current_month, last_30_days"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get performance metrics for inspectors.
@@ -87,11 +91,12 @@ async def get_performance_metrics(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve performance metrics: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/insights", response_model=AutomatedInsightsResponse)
 async def get_automated_insights(
     timeframe: str = Query("current_month", description="Analysis period: current_month, last_30_days"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Generate AI-like insights and recommendations based on inspector attendance patterns.
@@ -110,6 +115,7 @@ async def get_automated_insights(
         raise HTTPException(status_code=500, detail=f"Failed to generate insights: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/comparison")
 async def get_period_comparison(
     jalali_year_1: int = Query(..., description="First period Jalali year"),
@@ -117,7 +123,7 @@ async def get_period_comparison(
     jalali_year_2: int = Query(..., description="Second period Jalali year"),
     jalali_month_2: int = Query(..., description="Second period Jalali month"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Compare inspector attendance data between two Jalali months.
@@ -167,12 +173,13 @@ async def get_period_comparison(
         raise HTTPException(status_code=500, detail=f"Failed to compare periods: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/charts")
 async def get_chart_data(
     chart_type: str = Query(..., description="Type of chart: weekly_trends, monthly_distribution, department_comparison"),
     timeframe: str = Query("current_month", description="Analysis period"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get chart data for inspector attendance analytics visualization.
@@ -195,11 +202,12 @@ async def get_chart_data(
         raise HTTPException(status_code=500, detail=f"Failed to get chart data: {str(e)}")
 
 
+@log_api_errors("inspector")
 @router.get("/kpis")
 async def get_key_performance_indicators(
     timeframe: str = Query("current_month", description="Analysis period"),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get key performance indicators for inspector attendance.

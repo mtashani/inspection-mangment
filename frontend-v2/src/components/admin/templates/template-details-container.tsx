@@ -26,7 +26,7 @@ import { TemplateVersionHistory } from './template-version-history'
 import { TemplateDeployment } from './template-deployment'
 import { TemplateBackupRestore } from './template-backup-restore'
 import { TemplateExportImport } from './template-export-import'
-import { AdminErrorBoundary } from '../shared/admin-error-boundary'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 
 interface TemplateDetailsContainerProps {
   templateId: string
@@ -91,7 +91,7 @@ export function TemplateDetailsContainer({ templateId }: TemplateDetailsContaine
   }
 
   return (
-    <AdminErrorBoundary>
+    <ErrorBoundary>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -218,7 +218,7 @@ export function TemplateDetailsContainer({ templateId }: TemplateDetailsContaine
           </TabsContent>
         </Tabs>
       </div>
-    </AdminErrorBoundary>
+    </ErrorBoundary>
   )
 }
 

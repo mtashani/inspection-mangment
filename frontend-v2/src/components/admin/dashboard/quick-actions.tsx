@@ -1,16 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Calendar, 
-  FileText, 
-  DollarSign, 
-  Upload, 
+import {
+  Users,
+  Calendar,
+  FileText,
+  DollarSign,
+  Upload,
   Settings,
   Plus,
   BarChart3,
@@ -29,11 +29,12 @@ interface QuickActionsProps {
 interface ActionCardProps {
   title: string;
   description: string;
-  href: string;
+ href?: string;
+  onClick?: () => void;
   icon: React.ComponentType<{ className?: string }>;
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
   badge?: string | number;
-  disabled?: boolean;
+ disabled?: boolean;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
   title,
   description,
   href,
+  onClick,
   icon: Icon,
   color = 'default',
   badge,
@@ -82,15 +84,75 @@ const ActionCard: React.FC<ActionCardProps> = ({
 
   const styles = colorStyles[color];
 
-  const CardComponent = disabled ? 'div' : Link;
-  const cardProps = disabled ? {} : { href };
+  if (disabled) {
+    return (
+      <div className={cn('group', className)}>
+        <Card className={cn(
+          'transition-all duration-200 h-full',
+          styles.card,
+          disabled && 'opacity-50 cursor-not-allowed hover:shadow-none'
+        )}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center space-x-2">
+              <Icon className={cn('h-5 w-5 transition-colors', styles.icon)} />
+              <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            </div>
+            <div className="flex items-center space-x-2">
+              {badge && (
+                <Badge className={cn('text-xs', styles.badge)}>
+                  {badge}
+                </Badge>
+              )}
+              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {description}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
+  if (href) {
+    return (
+      <Link href={href} className={cn('group', className)}>
+        <Card className={cn(
+          'transition-all duration-200 cursor-pointer h-full',
+          styles.card
+        )}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center space-x-2">
+              <Icon className={cn('h-5 w-5 transition-colors', styles.icon)} />
+              <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            </div>
+            <div className="flex items-center space-x-2">
+              {badge && (
+                <Badge className={cn('text-xs', styles.badge)}>
+                  {badge}
+                </Badge>
+              )}
+              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {description}
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  }
+
+  // For onClick case (modal trigger)
   return (
-    <CardComponent {...cardProps} className={cn('group', className)}>
+    <button onClick={onClick} type="button" className={cn('group', className)}>
       <Card className={cn(
         'transition-all duration-200 cursor-pointer h-full',
-        styles.card,
-        disabled && 'opacity-50 cursor-not-allowed hover:shadow-none'
+        styles.card
       )}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div className="flex items-center space-x-2">
@@ -103,9 +165,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
                 {badge}
               </Badge>
             )}
-            {!disabled && (
-              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            )}
+            <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </CardHeader>
         <CardContent>
@@ -114,7 +174,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
           </p>
         </CardContent>
       </Card>
-    </CardComponent>
+    </button>
   );
 };
 
@@ -215,14 +275,6 @@ interface WorkflowActionsProps {
 
 export const WorkflowActions: React.FC<WorkflowActionsProps> = ({ className }) => {
   const workflowActions = [
-    {
-      title: 'Create New Inspector',
-      description: 'Add a new inspector to the system',
-      href: '/admin/inspectors/create',
-      icon: Plus,
-      color: 'primary' as const,
-      badge: 'New'
-    },
     {
       title: 'Generate Reports',
       description: 'Create attendance and payroll reports',

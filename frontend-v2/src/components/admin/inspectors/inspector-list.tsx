@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Users, Eye } from 'lucide-react'
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Users, Eye, Shield, Clock, Settings, FileText, Award } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,8 @@ import { InspectorFiltersComponent } from './inspector-filters'
 import { BulkOperations } from './bulk-operations'
 import { useDebounce } from '@/hooks/use-debounce'
 import { Checkbox } from '@radix-ui/react-checkbox'
+import { CreateInspectorModal } from './create-inspector-modal'
+import { EditInspectorModal } from './edit-inspector-modal'
 
 interface InspectorListProps {
   onEdit?: (inspector: Inspector) => void
@@ -45,6 +47,8 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState<InspectorFilters>({})
   const [selectedInspectors, setSelectedInspectors] = useState<Inspector[]>([])
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [editingInspector, setEditingInspector] = useState<Inspector | null>(null)
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -116,11 +120,9 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
               <Users className="h-5 w-5" />
               Inspector Management
             </CardTitle>
-            <Button asChild>
-              <Link href="/admin/inspectors/create">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Inspector
-              </Link>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Inspector
             </Button>
           </div>
         </CardHeader>
@@ -253,9 +255,13 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -266,15 +272,43 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
                                 View Details
                               </Link>
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditingInspector(inspector)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Inspector
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
-                              <Link href={`/admin/inspectors/${inspector.id}/edit`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Inspector
+                              <Link href={`/admin/inspectors/${inspector.id}?tab=roles`}>
+                                <Shield className="mr-2 h-4 w-4" />
+                                Manage Roles
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/inspectors/${inspector.id}/work-cycle`}>
+                                <Clock className="mr-2 h-4 w-4" />
+                                Work Cycles
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/inspectors/${inspector.id}/documents`}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Manage Documents
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/inspectors/${inspector.id}/certificates`}>
+                                <Award className="mr-2 h-4 w-4" />
+                                Manage Certificates
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => onDelete?.(inspector)}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                onDelete?.(inspector)
+                              }}
                               className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
@@ -303,16 +337,24 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page - 1)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setPage(page - 1)
+                  }}
                   disabled={page === 1}
+                  type="button"
                 >
                   Previous
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(page + 1)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setPage(page + 1)
+                  }}
                   disabled={page >= inspectorsResponse.pagination.totalPages}
+                  type="button"
                 >
                   Next
                 </Button>
@@ -321,6 +363,34 @@ export function InspectorList({ onEdit, onDelete }: InspectorListProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Inspector Modal */}
+      <CreateInspectorModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => {
+          refetch()
+          toast({
+            title: 'Success',
+            description: 'Inspector created successfully'
+          })
+        }}
+      />
+
+      {/* Edit Inspector Modal */}
+      <EditInspectorModal
+        inspector={editingInspector || undefined}
+        open={!!editingInspector}
+        onOpenChange={(open) => !open && setEditingInspector(null)}
+        onSuccess={() => {
+          refetch()
+          setEditingInspector(null)
+          toast({
+            title: 'Success',
+            description: 'Inspector updated successfully'
+          })
+        }}
+      />
     </div>
   )
 }

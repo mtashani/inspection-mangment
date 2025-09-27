@@ -324,7 +324,6 @@ class ReportingService:
                 'inspector_id': inspector_id,
                 'inspector_name': f"{inspector.first_name} {inspector.last_name}",
                 'employee_id': inspector.employee_id,
-                'department': inspector.department,
                 'working_days': working_days,
                 'resting_days': resting_days,
                 'leave_days': leave_days,
@@ -371,7 +370,6 @@ class ReportingService:
                 'inspector_id': record.inspector_id,
                 'inspector_name': f"{inspector.first_name} {inspector.last_name}",
                 'employee_id': inspector.employee_id,
-                'department': inspector.department,
                 'status': record.status.value,
                 'regular_hours': record.regular_hours,
                 'overtime_hours': record.overtime_hours,
@@ -413,10 +411,10 @@ class ReportingService:
         dept_analysis = {}
         for record in records:
             inspector = inspector_dict.get(record.inspector_id)
-            if not inspector or not inspector.department:
+            if not inspector:
                 continue
             
-            dept = inspector.department
+            dept = 'Unknown'
             if dept not in dept_analysis:
                 dept_analysis[dept] = {
                     'working_days': 0,

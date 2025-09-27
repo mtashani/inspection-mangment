@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -43,6 +44,7 @@ import {
   exportInspectorData,
   importInspectorData 
 } from '@/lib/api/admin/inspectors'
+import { BulkRoleAssignment } from './bulk-role-assignment'
 
 interface BulkOperationsProps {
   selectedInspectors: Inspector[]
@@ -50,7 +52,7 @@ interface BulkOperationsProps {
   onOperationComplete: () => void
 }
 
-type BulkOperation = 'update' | 'delete' | 'export' | 'import'
+type BulkOperation = 'update' | 'delete' | 'export' | 'import' | 'assign-roles'
 
 interface BulkUpdateData {
   active?: boolean
@@ -68,6 +70,7 @@ export function BulkOperations({
   const [currentOperation, setCurrentOperation] = useState<BulkOperation | null>(null)
   const [bulkUpdateData, setBulkUpdateData] = useState<BulkUpdateData>({})
   const [importFile, setImportFile] = useState<File | null>(null)
+  const [showRoleAssignment, setShowRoleAssignment] = useState(false)
 
   const bulkUpdateMutation = useMutation({
     mutationFn: ({ inspectorIds, updates }: { inspectorIds: number[], updates: Partial<InspectorFormData> }) =>
@@ -159,6 +162,14 @@ export function BulkOperations({
     setShowDialog(true)
   }
 
+  const handleBulkRoleAssignment = () => {
+    if (selectedInspectors.length === 0) {
+      toast.error('Please select inspectors to assign roles')
+      return
+    }
+    setShowRoleAssignment(true)
+  }
+
   const confirmBulkUpdate = () => {
     const inspectorIds = selectedInspectors.map(i => i.id)
     const updates: Partial<InspectorFormData> = {}
@@ -226,6 +237,14 @@ export function BulkOperations({
             <DropdownMenuItem onClick={handleImport}>
               <Upload className="w-4 h-4 mr-2" />
               Import from File
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleBulkRoleAssignment}
+              disabled={selectedInspectors.length === 0}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Assign Roles ({selectedInspectors.length})
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -429,6 +448,14 @@ export function BulkOperations({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Role Assignment Dialog */}
+      <BulkRoleAssignment
+        selectedInspectors={selectedInspectors}
+        isOpen={showRoleAssignment}
+        onClose={() => setShowRoleAssignment(false)}
+        onSuccess={handleOperationComplete}
+      />
     </>
   )
 }

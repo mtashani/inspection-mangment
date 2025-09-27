@@ -13,10 +13,10 @@ psycopg2-binary>=2.9.7,<2.10.0
 pydantic>=2.4.0,<3.0.0
 pydantic-settings>=2.0.0
 
-# Authentication libraries - Updated versions with compatibility fixes
+# Authentication libraries - Fixed versions for compatibility
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.0.1,<4.1.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 PyJWT>=2.8.0
 
 # Utilities - Updated versions

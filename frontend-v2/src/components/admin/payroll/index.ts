@@ -1,4 +1,5 @@
 // Payroll Management Components
+export { PayrollManagement } from './payroll-management'
 export { PayrollDashboard } from './payroll-dashboard'
 export { PayrollStatsCards } from './payroll-stats-cards'
 export { PayrollCalendar } from './payroll-calendar'

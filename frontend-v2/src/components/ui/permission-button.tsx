@@ -2,70 +2,19 @@
 
 import React from 'react';
 import { Button, ButtonProps } from '@/components/ui/button';
-import { PermissionGuard } from '@/components/auth/permission-guard';
-import { ProtectedComponentProps } from '@/types/permissions';
 
-interface PermissionButtonProps extends ButtonProps, Omit<ProtectedComponentProps, 'children'> {
+// Simplified permission button (middleware handles all permissions)
+interface PermissionButtonProps extends ButtonProps {
   children: React.ReactNode;
-  hideWhenNoAccess?: boolean;
-  disableWhenNoAccess?: boolean;
-  fallbackText?: string;
 }
 
 /**
- * Button component that shows/hides or enables/disables based on permissions
+ * Simple button component (permission logic moved to middleware)
  */
 export function PermissionButton({
   children,
-  permission,
-  permissions,
-  role,
-  roles,
-  requireAll = false,
-  hideWhenNoAccess = false,
-  disableWhenNoAccess = true,
-  fallbackText,
-  fallback,
   ...buttonProps
 }: PermissionButtonProps) {
-  if (hideWhenNoAccess) {
-    return (
-      <PermissionGuard
-        permission={permission}
-        permissions={permissions}
-        role={role}
-        roles={roles}
-        requireAll={requireAll}
-        fallback={fallback}
-      >
-        <Button {...buttonProps}>
-          {children}
-        </Button>
-      </PermissionGuard>
-    );
-  }
-
-  if (disableWhenNoAccess) {
-    return (
-      <PermissionGuard
-        permission={permission}
-        permissions={permissions}
-        role={role}
-        roles={roles}
-        requireAll={requireAll}
-        fallback={
-          <Button {...buttonProps} disabled title="You don't have permission to perform this action">
-            {fallbackText || children}
-          </Button>
-        }
-      >
-        <Button {...buttonProps}>
-          {children}
-        </Button>
-      </PermissionGuard>
-    );
-  }
-
   return (
     <Button {...buttonProps}>
       {children}
@@ -74,124 +23,72 @@ export function PermissionButton({
 }
 
 /**
- * Action button with built-in permission checking
+ * Action button 
  */
 export function ActionButton({
-  action,
-  resource,
   children,
   ...props
-}: Omit<PermissionButtonProps, 'permission'> & {
-  action: string;
-  resource: string;
-}) {
+}: PermissionButtonProps) {
   return (
-    <PermissionButton
-      permission={{ resource, action }}
-      {...props}
-    >
+    <PermissionButton {...props}>
       {children}
     </PermissionButton>
   );
 }
 
 /**
- * Create button - shorthand for create permission
+ * Create button
  */
 export function CreateButton({
-  resource,
   children = 'Create',
   ...props
-}: Omit<PermissionButtonProps, 'permission'> & {
-  resource: string;
-}) {
+}: PermissionButtonProps) {
   return (
-    <ActionButton
-      action="create"
-      resource={resource}
-      {...props}
-    >
+    <ActionButton {...props}>
       {children}
     </ActionButton>
   );
 }
 
 /**
- * Edit button - shorthand for edit permission
+ * Edit button
  */
 export function EditButton({
-  resource,
-  isOwn = false,
   children = 'Edit',
   ...props
-}: Omit<PermissionButtonProps, 'permission'> & {
-  resource: string;
-  isOwn?: boolean;
-}) {
+}: PermissionButtonProps) {
   return (
-    <ActionButton
-      action={isOwn ? 'edit_own' : 'edit_all'}
-      resource={resource}
-      {...props}
-    >
+    <ActionButton {...props}>
       {children}
     </ActionButton>
   );
 }
 
 /**
- * Delete button - shorthand for delete permission
+ * Delete button
  */
 export function DeleteButton({
-  resource,
-  scope = 'own',
   children = 'Delete',
   variant = 'destructive',
   ...props
-}: Omit<PermissionButtonProps, 'permission' | 'variant'> & {
-  resource: string;
-  scope?: 'own' | 'section' | 'all';
-  variant?: ButtonProps['variant'];
-}) {
-  const actionMap = {
-    own: 'delete_own',
-    section: 'delete_section',
-    all: 'delete_all',
-  };
-
+}: PermissionButtonProps) {
   return (
-    <ActionButton
-      action={actionMap[scope]}
-      resource={resource}
-      variant={variant}
-      {...props}
-    >
+    <ActionButton variant={variant} {...props}>
       {children}
     </ActionButton>
   );
 }
 
 /**
- * Approve button - shorthand for approve permission
+ * Approve button
  */
 export function ApproveButton({
-  resource,
-  isFinal = false,
   children = 'Approve',
   variant = 'default',
   ...props
-}: Omit<PermissionButtonProps, 'permission' | 'variant'> & {
-  resource: string;
-  isFinal?: boolean;
-  variant?: ButtonProps['variant'];
-}) {
+}: PermissionButtonProps) {
   return (
-    <ActionButton
-      action={isFinal ? 'final_approve' : 'approve'}
-      resource={resource}
-      variant={variant}
-      {...props}
-    >
+    <ActionButton variant={variant} {...props}>
       {children}
     </ActionButton>
   );

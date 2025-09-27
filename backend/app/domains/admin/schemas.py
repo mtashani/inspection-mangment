@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 # Role Management Schemas
@@ -16,6 +16,10 @@ class RoleCreate(RoleBase):
     pass
 
 
+class RoleCreateWithPermissions(RoleBase):
+    permission_ids: Optional[List[int]] = Field(default=[], description="List of permission IDs to assign to the new role")
+
+
 class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Role name")
     description: Optional[str] = Field(None, max_length=500, description="Role description")
@@ -23,12 +27,14 @@ class RoleUpdate(BaseModel):
 
 
 class RoleResponse(RoleBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        from_attributes = True
+    inspector_count: Optional[int] = 0
+    permission_count: Optional[int] = 0
+    permissions: Optional[List[str]] = []
 
 
 class RoleListResponse(BaseModel):
@@ -47,21 +53,29 @@ class PermissionBase(BaseModel):
     action: str = Field(..., min_length=1, max_length=50, description="Action name")
     display_label: str = Field(..., min_length=1, max_length=100, description="Display label for UI")
 
-    @validator('resource')
+    @field_validator('resource')
+    @classmethod
     def validate_resource(cls, v):
+        # Updated to match standardized permissions system
         allowed_resources = [
-            'psv', 'ndt', 'mechanical', 'corrosion', 'crane', 'electrical', 
-            'instrumentation', 'report', 'admin', 'quality', 'inspector'
+            'system', 'hr', 'mechanical', 'corrosion', 'ndt', 'electrical', 
+            'instrument', 'quality', 'maintenance',
+            # Legacy resources for backward compatibility
+            'psv', 'crane', 'instrumentation', 'report', 'admin', 'inspector'
         ]
         if v not in allowed_resources:
             raise ValueError(f'Resource must be one of: {", ".join(allowed_resources)}')
         return v
 
-    @validator('action')
+    @field_validator('action')
+    @classmethod
     def validate_action(cls, v):
+        # Updated to match standardized permissions system
         allowed_actions = [
-            'create', 'view', 'edit_own', 'edit_all', 'approve', 'final_approve',
-            'delete_own', 'delete_section', 'delete_all', 'manage', 'execute_test'
+            'view', 'edit', 'approve', 'superadmin', 'manage',
+            # Legacy actions for backward compatibility
+            'create', 'edit_own', 'edit_all', 'final_approve',
+            'delete_own', 'delete_section', 'delete_all', 'execute_test'
         ]
         if v not in allowed_actions:
             raise ValueError(f'Action must be one of: {", ".join(allowed_actions)}')
@@ -81,12 +95,11 @@ class PermissionUpdate(BaseModel):
 
 
 class PermissionResponse(PermissionBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class PermissionListResponse(BaseModel):

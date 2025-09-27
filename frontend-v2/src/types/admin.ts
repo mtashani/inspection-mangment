@@ -67,6 +67,9 @@ export interface Inspector {
   username?: string
   canLogin: boolean
   attendanceTrackingEnabled: boolean
+  // Work Cycle
+  workCycleStartDate?: string
+  workCycleType?: 'full_time' | 'part_time' | 'contract' | 'fourteen_fourteen' | 'seven_seven' | 'office' | 'guest'
   // Payroll
   baseHourlyRate?: number
   overtimeMultiplier?: number
@@ -89,7 +92,7 @@ export interface InspectorFormData {
   phone?: string
   dateOfBirth?: string
   birthPlace?: string
-  maritalStatus?: string
+  maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED'
   // Education
   educationDegree?: string
   educationField?: string
@@ -104,11 +107,14 @@ export interface InspectorFormData {
   password?: string
   canLogin: boolean
   attendanceTrackingEnabled: boolean
+  workCycleStartDate?: string
+  workCycleType?: 'full_time' | 'part_time' | 'contract' | 'fourteen_fourteen' | 'seven_seven' | 'office' | 'guest'
   // Payroll
   baseHourlyRate?: number
   overtimeMultiplier?: number
   nightShiftMultiplier?: number
   onCallMultiplier?: number
+  notes?: string
 }
 
 export interface InspectorFilters {

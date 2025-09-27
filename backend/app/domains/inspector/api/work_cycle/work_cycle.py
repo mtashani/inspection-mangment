@@ -9,14 +9,16 @@ from app.domains.inspector.schemas.work_cycle import (
 )
 from app.domains.inspector.services.work_cycle_service import WorkCycleService
 from app.database import get_session
-from app.domains.auth.dependencies import get_current_active_inspector, require_permission
+from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
+from app.core.api_logging import log_api_errors
 
 router = APIRouter()
 
+@log_api_errors("inspector")
 @router.get("", response_model=List[WorkCycleResponse])
 def get_all_work_cycles(
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Get all work cycles (admin only).
@@ -25,11 +27,12 @@ def get_all_work_cycles(
     cycles = service.get_all_work_cycles()
     return [WorkCycleResponse.from_model(cycle) for cycle in cycles]
 
+@log_api_errors("inspector")
 @router.post("", response_model=WorkCycleResponse)
 def create_work_cycle(
     work_cycle_data: WorkCycleCreate,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Create a new work cycle (admin only).
@@ -38,6 +41,7 @@ def create_work_cycle(
     cycle = service.create_work_cycle(work_cycle_data)
     return WorkCycleResponse.from_model(cycle)
 
+@log_api_errors("inspector")
 @router.get("/{cycle_id}", response_model=WorkCycleResponse)
 def get_work_cycle(
     cycle_id: int,
@@ -53,12 +57,13 @@ def get_work_cycle(
         raise HTTPException(status_code=404, detail="Work cycle not found.")
     return WorkCycleResponse.from_model(cycle)
 
+@log_api_errors("inspector")
 @router.put("/{cycle_id}", response_model=WorkCycleResponse)
 def update_work_cycle(
     cycle_id: int,
     work_cycle_data: WorkCycleUpdate,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Update a work cycle (admin only).
@@ -70,11 +75,12 @@ def update_work_cycle(
         raise HTTPException(status_code=404, detail=str(e))
     return WorkCycleResponse.from_model(cycle)
 
+@log_api_errors("inspector")
 @router.delete("/{cycle_id}")
 def delete_work_cycle(
     cycle_id: int,
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Delete a work cycle (admin only).
@@ -83,6 +89,7 @@ def delete_work_cycle(
     service.delete_work_cycle(cycle_id)
     return {"message": "Work cycle deleted successfully"}
 
+@log_api_errors("inspector")
 @router.get("/{inspector_id}", response_model=List[WorkCycleResponse])
 def get_inspector_work_cycles(
     inspector_id: int,
@@ -112,13 +119,14 @@ def get_inspector_work_cycles(
     cycles = service.get_work_cycles_by_inspector(inspector_id)
     return [WorkCycleResponse.from_model(cycle) for cycle in cycles]
 
+@log_api_errors("inspector")
 @router.post("/{cycle_id}/generate-attendance", response_model=dict)
 def generate_attendance_from_cycle(
     cycle_id: int,
     jalali_year: int = Query(...),
     jalali_month: int = Query(...),
     db: Session = Depends(get_session),
-    current_inspector = Depends(require_permission("admin", "manage"))
+    current_inspector = Depends(require_standardized_permission("system_superadmin"))
 ):
     """
     Generate attendance records from a work cycle for a specific month (admin only).

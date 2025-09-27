@@ -68,11 +68,39 @@ export async function middleware(request: NextRequest) {
       
       console.log('🎯 Token verified, user roles:', user.roles)
       
-      // Check if user has admin role (exact match for 'Global Admin')
-      const isAdmin = user.roles?.includes('Global Admin') || false
+      // Check if user has admin role (support multiple admin role names)
+      const adminRoles = ['Super Admin', 'Global Admin', 'System Administrator']
+      console.log('🔍 Admin role check:')
+      console.log('   Available admin roles:', adminRoles)
+      console.log('   User roles:', user.roles)
+      console.log('   User roles type:', typeof user.roles, Array.isArray(user.roles))
       
-      if (!isAdmin) {
+      const isAdmin = user.roles?.some(role => {
+        console.log(`   Checking role: "${role}" against admin roles`)
+        // Trim whitespace and normalize the role string
+        const normalizedRole = role?.trim()
+        const match = adminRoles.some(adminRole => {
+          const normalizedAdminRole = adminRole.trim()
+          const exactMatch = normalizedRole === normalizedAdminRole
+          const caseInsensitiveMatch = normalizedRole.toLowerCase() === normalizedAdminRole.toLowerCase()
+          console.log(`     Comparing "${normalizedRole}" with "${normalizedAdminRole}": exact=${exactMatch}, case-insensitive=${caseInsensitiveMatch}`)
+          return exactMatch || caseInsensitiveMatch
+        })
+        console.log(`   Role "${role}" match:`, match)
+        return match
+      }) || false
+      
+      console.log('   Final isAdmin result:', isAdmin)
+      
+      // Also check for system_superadmin permission if available
+      const hasAdminPermission = user.permissions?.includes('system_superadmin') || false
+      console.log('   hasAdminPermission:', hasAdminPermission)
+      
+      if (!isAdmin && !hasAdminPermission) {
         console.log('❌ User is not admin - redirecting to unauthorized')
+        console.log('   User roles:', user.roles)
+        console.log('   User permissions:', user.permissions)
+        console.log('   Required: Super Admin role or system_superadmin permission')
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
       

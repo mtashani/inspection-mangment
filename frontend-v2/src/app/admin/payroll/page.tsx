@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
-import { PayrollDashboard } from '@/components/admin/payroll/payroll-dashboard'
-import { AdminPermissionGuard } from '@/components/admin/shared/admin-permission-guard'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { PayrollManagement } from '@/components/admin/payroll/payroll-management'
 
 export const metadata: Metadata = {
   title: 'Payroll Management | Admin Panel',
@@ -9,10 +9,16 @@ export const metadata: Metadata = {
 
 export default function PayrollPage() {
   return (
-    <AdminPermissionGuard requiredPermission="canViewPayroll">
+    <DashboardLayout 
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Admin Panel', href: '/admin' },
+        { label: 'Payroll Management', current: true }
+      ]}
+    >
       <div className="container mx-auto px-4 py-8">
-        <PayrollDashboard />
+        <PayrollManagement />
       </div>
-    </AdminPermissionGuard>
+    </DashboardLayout>
   )
 }

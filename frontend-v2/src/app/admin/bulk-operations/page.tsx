@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
-import { AdminPermissionGuard } from '@/components/admin/shared/admin-permission-guard'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { BulkOperationsContainer } from '@/components/admin/bulk-operations/bulk-operations-container'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -36,10 +36,16 @@ function BulkOperationsLoading() {
 
 export default function BulkOperationsPage() {
   return (
-    <AdminPermissionGuard requiredPermission="canPerformBulkOperations">
+    <DashboardLayout 
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Admin Panel', href: '/admin' },
+        { label: 'Bulk Operations', current: true }
+      ]}
+    >
       <Suspense fallback={<BulkOperationsLoading />}>
         <BulkOperationsContainer />
       </Suspense>
-    </AdminPermissionGuard>
+    </DashboardLayout>
   )
 }

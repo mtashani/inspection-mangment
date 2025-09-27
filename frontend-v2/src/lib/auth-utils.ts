@@ -1,29 +1,33 @@
 import { User } from './auth';
 import { RBACUser } from '@/types/permissions';
+import { snakeToCamelObject } from './utils/transform';
 
 /**
  * Transform backend inspector response to frontend User format
  */
 export function transformInspectorToUser(inspector: any): User {
+  // First transform snake_case to camelCase
+  const camelCaseInspector = snakeToCamelObject(inspector);
+  
   return {
-    id: inspector.id,
-    username: inspector.username,
-    email: inspector.email,
-    name: inspector.name || `${inspector.first_name || ''} ${inspector.last_name || ''}`.trim(),
-    roles: inspector.roles || [],
-    is_active: inspector.is_active ?? inspector.active ?? true,
-    employee_id: inspector.employee_id,
+    id: camelCaseInspector.id,
+    username: camelCaseInspector.username,
+    email: camelCaseInspector.email,
+    name: camelCaseInspector.name || `${camelCaseInspector.firstName || ''} ${camelCaseInspector.lastName || ''}`.trim(),
+    roles: camelCaseInspector.roles || [],
+    is_active: camelCaseInspector.isActive ?? camelCaseInspector.active ?? true,
+    employee_id: camelCaseInspector.employeeId,
     
     // Optional fields
-    first_name: inspector.first_name,
-    last_name: inspector.last_name,
-    phone: inspector.phone,
-    profile_image_url: inspector.profile_image_url,
-    active: inspector.active,
-    can_login: inspector.can_login,
+    first_name: camelCaseInspector.firstName,
+    last_name: camelCaseInspector.lastName,
+    phone: camelCaseInspector.phone,
+    profile_image_url: camelCaseInspector.profileImageUrl,
+    active: camelCaseInspector.active,
+    can_login: camelCaseInspector.canLogin,
     
     // Backward compatibility
-    avatar: inspector.profile_image_url || inspector.avatar,
+    avatar: camelCaseInspector.profileImageUrl || camelCaseInspector.avatar,
   };
 }
 
@@ -31,58 +35,61 @@ export function transformInspectorToUser(inspector: any): User {
  * Transform backend inspector response to RBACUser format
  */
 export function transformInspectorToRBACUser(inspector: any): RBACUser {
+  // First transform snake_case to camelCase
+  const camelCaseInspector = snakeToCamelObject(inspector);
+  
   return {
-    id: inspector.id,
-    username: inspector.username,
-    email: inspector.email,
-    first_name: inspector.first_name || '',
-    last_name: inspector.last_name || '',
-    employee_id: inspector.employee_id,
-    national_id: inspector.national_id || '',
-    phone: inspector.phone,
+    id: camelCaseInspector.id,
+    username: camelCaseInspector.username,
+    email: camelCaseInspector.email,
+    first_name: camelCaseInspector.firstName || '',
+    last_name: camelCaseInspector.lastName || '',
+    employee_id: camelCaseInspector.employeeId,
+    national_id: camelCaseInspector.nationalId || '',
+    phone: camelCaseInspector.phone,
     
     // Educational Information
-    education_degree: inspector.education_degree,
-    education_field: inspector.education_field,
-    education_institute: inspector.education_institute,
-    graduation_year: inspector.graduation_year,
+    education_degree: camelCaseInspector.educationDegree,
+    education_field: camelCaseInspector.educationField,
+    education_institute: camelCaseInspector.educationInstitute,
+    graduation_year: camelCaseInspector.graduationYear,
     
     // Experience and qualifications
-    years_experience: inspector.years_experience || 0,
-    previous_companies: inspector.previous_companies || [],
+    years_experience: camelCaseInspector.yearsExperience || 0,
+    previous_companies: camelCaseInspector.previousCompanies || [],
     
     // Status and authentication
-    active: inspector.active ?? true,
-    can_login: inspector.can_login ?? false,
-    last_login: inspector.last_login,
+    active: camelCaseInspector.active ?? true,
+    can_login: camelCaseInspector.canLogin ?? false,
+    last_login: camelCaseInspector.lastLogin,
     
     // Profile information
-    date_of_birth: inspector.date_of_birth,
-    birth_place: inspector.birth_place,
-    profile_image_url: inspector.profile_image_url,
-    marital_status: inspector.marital_status,
+    date_of_birth: camelCaseInspector.dateOfBirth,
+    birth_place: camelCaseInspector.birthPlace,
+    profile_image_url: camelCaseInspector.profileImageUrl,
+    marital_status: camelCaseInspector.maritalStatus,
     
     // Payroll information
-    base_hourly_rate: inspector.base_hourly_rate,
-    overtime_multiplier: inspector.overtime_multiplier,
-    night_shift_multiplier: inspector.night_shift_multiplier,
-    on_call_multiplier: inspector.on_call_multiplier,
+    base_hourly_rate: camelCaseInspector.baseHourlyRate,
+    overtime_multiplier: camelCaseInspector.overtimeMultiplier,
+    night_shift_multiplier: camelCaseInspector.nightShiftMultiplier,
+    on_call_multiplier: camelCaseInspector.onCallMultiplier,
     
-    attendance_tracking_enabled: inspector.attendance_tracking_enabled ?? false,
+    attendance_tracking_enabled: camelCaseInspector.attendanceTrackingEnabled ?? false,
     
     // Timestamps
-    created_at: inspector.created_at,
-    updated_at: inspector.updated_at,
+    created_at: camelCaseInspector.createdAt,
+    updated_at: camelCaseInspector.updatedAt,
     
     // RBAC data
-    roles: inspector.roles || [],
-    permissions: inspector.permissions || [],
-    inspector_roles: inspector.inspector_roles,
+    roles: camelCaseInspector.roles || [],
+    permissions: camelCaseInspector.permissions || [],
+    inspector_roles: camelCaseInspector.inspectorRoles,
     
     // Computed properties
-    name: inspector.name || `${inspector.first_name || ''} ${inspector.last_name || ''}`.trim(),
-    is_active: inspector.is_active ?? inspector.active ?? true,
-    avatar: inspector.profile_image_url || inspector.avatar,
+    name: camelCaseInspector.name || `${camelCaseInspector.firstName || ''} ${camelCaseInspector.lastName || ''}`.trim(),
+    is_active: camelCaseInspector.isActive ?? camelCaseInspector.active ?? true,
+    avatar: camelCaseInspector.profileImageUrl || camelCaseInspector.avatar,
   };
 }
 

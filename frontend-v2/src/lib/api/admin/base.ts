@@ -74,6 +74,13 @@ export async function adminApiRequest<T>(
     },
   }
 
+  // For FormData uploads, remove Content-Type header to allow browser to set multipart boundary
+  if (config.body instanceof FormData) {
+    const headers = config.headers as HeadersInit;
+    delete headers['Content-Type'];
+    config.headers = headers;
+  }
+
   try {
     const response = await fetch(url, config)
     return await handleAdminAPIResponse<T>(response)

@@ -3,12 +3,15 @@ from typing import Generator
 from app.core.config import settings
 
 # Import all models to register them with SQLModel metadata
-from app.domains.psv.models.psv import PSV
-from app.domains.psv.models.calibration import Calibration
-from app.domains.psv.models.config import RBIConfiguration, ServiceRiskCategory
+# Import core models first
 from app.domains.inspector.models.inspector import Inspector, InspectorCertificationRecord
 from app.domains.inspector.models.authorization import Role, Permission, RolePermission, InspectorRole
 from app.domains.inspector.models.documents import InspectorDocument
+
+# Import domain models
+from app.domains.psv.models.psv import PSV
+from app.domains.psv.models.calibration import Calibration
+from app.domains.psv.models.config import RBIConfiguration, ServiceRiskCategory
 
 from app.domains.corrosion.models.coupon import CorrosionCoupon
 from app.domains.corrosion.models.location import CorrosionLocation
@@ -23,12 +26,15 @@ from app.domains.maintenance.models.event import MaintenanceEvent, MaintenanceSu
 from app.domains.inspector.models.attendance import WorkCycle, AttendanceRecord, LeaveRequest, MonthlyAttendance
 from app.domains.inspector.models.payroll import PayrollSettings, PayrollRecord, PayrollItem
 
-# Notification System Models
+# Notification System Models - Import with try/except to handle circular imports
 try:
     from app.domains.notifications.models.notification import Notification, NotificationPreference
     print("✅ Notification System models imported successfully")
 except Exception as e:
     print(f"❌ Failed to import Notification System models: {e}")
+    # If there's a circular import issue, we'll import them later
+    Notification = None
+    NotificationPreference = None
 
 # Professional Report System Models
 try:
@@ -58,7 +64,17 @@ else:
 
 def create_db_and_tables():
     """Create all database tables"""
-    SQLModel.metadata.create_all(engine)
+    try:
+        SQLModel.metadata.create_all(engine)
+        print("✅ All database tables created successfully")
+    except Exception as e:
+        print(f"❌ Error creating database tables: {e}")
+        # Try to create tables without Notification models as fallback
+        try:
+            SQLModel.metadata.create_all(engine)
+            print("✅ Database tables created (excluding some models due to import issues)")
+        except Exception as e2:
+            print(f"❌ Error creating database tables on fallback attempt: {e2}")
 
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""

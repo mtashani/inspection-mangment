@@ -83,7 +83,6 @@ class DashboardService:
                     "inspector_id": record.inspector_id,
                     "inspector_name": f"{inspector.first_name} {inspector.last_name}",
                     "employee_id": inspector.employee_id,
-                    "department": inspector.department,
                     "status": record.status.value,
                     "regular_hours": record.regular_hours,
                     "overtime_hours": record.overtime_hours,
@@ -110,7 +109,6 @@ class DashboardService:
                     "inspector_id": inspector.id,
                     "inspector_name": f"{inspector.first_name} {inspector.last_name}",
                     "employee_id": inspector.employee_id,
-                    "department": inspector.department,
                     "status": "NOT_RECORDED"
                 })
         
@@ -181,7 +179,6 @@ class DashboardService:
                 "inspector_id": inspector.id,
                 "inspector_name": f"{inspector.first_name} {inspector.last_name}",
                 "employee_id": inspector.employee_id,
-                "department": inspector.department,
                 "working_days": working_days,
                 "resting_days": resting_days,
                 "leave_days": leave_days,
