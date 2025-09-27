@@ -10,12 +10,64 @@ from app.database import get_session as get_db
 from app.domains.auth.services.auth_service import AuthService
 from app.domains.auth.services.permission_service import PermissionService
 from app.core.permissions import validate_permission
+from app.core.api_logging import DomainLogger
 
 if TYPE_CHECKING:
     from app.domains.inspector.models.inspector import Inspector
 
 # HTTP Bearer token security scheme
 security = HTTPBearer(auto_error=False)
+
+
+def _extract_domain_from_path(path: str) -> str:
+    """
+    Extract domain name from URL path to determine which log file to use.
+    Examples:
+    - /api/v1/inspector/documents/1/preview -> inspector
+    - /api/v1/maintenance/equipment/1 -> maintenance
+    - /api/v1/equipment/1 -> equipment
+    """
+    path_parts = path.strip('/').split('/')
+    # Look for common API version patterns and extract domain after version
+    for i, part in enumerate(path_parts):
+        if part.startswith('v') and len(part) > 1:  # v1, v2, etc.
+            if i + 1 < len(path_parts):
+                domain = path_parts[i + 1]
+                # Sanitize domain name to be a valid filename
+                domain = domain.replace('-', '_').replace('.', '_').lower()
+                
+                # Handle some common plural/singular variations
+                if domain.endswith('s') and domain not in ['users', 'files', 'logs']:  # keep actual plurals
+                    singular = domain[:-1]
+                    # Use a whitelist of valid domains to know when to singularize
+                    valid_domains = {
+                        'inspector', 'equipment', 'maintenance', 'inspection', 
+                        'document', 'certification', 'schedule', 'report'
+                    }
+                    if singular in valid_domains:
+                        domain = singular
+                
+                return domain
+    
+    # Default to 'general' if we can't determine the domain
+    return 'general'
+
+
+def _log_authentication_error(request: Request, error_message: str, user_id: Optional[int] = None):
+    """
+    Helper function to log authentication errors to the appropriate domain log
+    """
+    domain_name = _extract_domain_from_path(str(request.url.path))
+    DomainLogger.log_api_error(
+        domain_name=domain_name,
+        endpoint=str(request.url.path),
+        method=request.method,
+        error=Exception(error_message),
+        request_data=None,
+        user_id=user_id,
+        status_code=401
+    )
+
 
 async def get_current_inspector(
     request: Request,
@@ -37,11 +89,14 @@ async def get_current_inspector(
         return None
 
 async def get_current_active_inspector(
+    request: Request,
     inspector: Optional["Inspector"] = Depends(get_current_inspector)
 ) -> "Inspector":
     """Get current active inspector or raise 401"""
     if not inspector:
         logging.warning("Unauthenticated access attempt")
+        # Log authentication failure to appropriate domain logs
+        _log_authentication_error(request, "Could not validate credentials - authentication failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -50,6 +105,8 @@ async def get_current_active_inspector(
     
     if not inspector.active:
         logging.warning(f"Inactive inspector {inspector.id} attempted access")
+        # Log inactive account access attempt to appropriate domain logs
+        _log_authentication_error(request, f"Inactive inspector {inspector.id} attempted access", inspector.id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inspector account is inactive"
@@ -57,6 +114,8 @@ async def get_current_active_inspector(
         
     if not inspector.can_login:
         logging.warning(f"Inspector {inspector.id} without login permission attempted access")
+        # Log login permission denial to appropriate domain logs
+        _log_authentication_error(request, f"Inspector {inspector.id} without login permission attempted access", inspector.id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inspector account cannot login"

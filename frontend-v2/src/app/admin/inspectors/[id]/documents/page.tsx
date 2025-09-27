@@ -93,16 +93,7 @@ const api = {
   },
 
   getDocumentStats: async (inspectorId: number) => {
-    // Placeholder for document stats - would typically come from backend API
-    return {
-      inspector_id: inspectorId,
-      total_documents: 0,
-      total_size_bytes: 0,
-      total_size_mb: 0,
-      document_types: {},
-      file_types: {},
-      average_file_size_mb: 0
-    }
+    return fileUploadAPI.getDocumentStats(inspectorId);
   },
 
   downloadDocument: async (documentId: number) => {
@@ -122,6 +113,24 @@ const api = {
     }
     const blob = await response.blob();
     return blob;
+  },
+
+  // Preview document with authentication
+  previewDocument: async (documentId: number) => {
+    const url = `/api/v1/inspector/documents/${documentId}/preview`;
+    const token = authService.getToken() || localStorage.getItem('access_token');
+    
+    const response = await fetch(url, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Preview failed: ${response.status}`);
+    }
+    
+    return response.blob();
   }
 }
 
@@ -190,6 +199,8 @@ export default function DocumentManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [previewUrls, setPreviewUrls] = useState<{[key: number]: string}>({})
+  const [loadingPreviews, setLoadingPreviews] = useState<Set<number>>(new Set())
 
   const breadcrumbs = [
     { label: 'Dashboard', href: '/dashboard' },
@@ -208,12 +219,6 @@ export default function DocumentManagementPage() {
   })
 
   useEffect(() => {
-    if (!inspectorId) {
-      toast.error('Inspector ID is required')
-      router.push('/admin/inspectors')
-      return
-    }
-
     const fetchInspector = async () => {
       try {
         const data = await getInspectorById(Number(inspectorId))
@@ -228,6 +233,29 @@ export default function DocumentManagementPage() {
     loadData()
   }, [inspectorId])
 
+  // Load preview URLs when documents change
+  useEffect(() => {
+    const loadAllPreviews = async () => {
+      for (const doc of documents) {
+        if (doc.mime_type?.startsWith('image/') || doc.mime_type === 'application/pdf') {
+          await loadPreviewUrl(doc);
+        }
+      }
+    };
+
+    if (documents.length > 0) {
+      loadAllPreviews();
+    }
+  }, [documents]);
+  
+  // Cleanup function for preview URLs
+  useEffect(() => {
+    return () => {
+      // Revoke object URLs to free memory when component unmounts
+      Object.values(previewUrls).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
+
   const loadData = async () => {
     try {
       setIsLoading(true)
@@ -239,7 +267,7 @@ export default function DocumentManagementPage() {
       ])
 
       setDocuments(docsData)
-      console.log('Fetched Documents Debug:', docsData.map(d => ({ id: d.id, mime_type: d.mime_type, original_filename: d.original_filename, download_url: d.download_url, previewUrl: `/api/v1/inspectors/documents/${d.id}/preview` })));
+      console.log('Fetched Documents Debug:', docsData.map(d => ({ id: d.id, mime_type: d.mime_type, original_filename: d.original_filename, download_url: d.download_url, previewUrl: `/api/v1/inspector/documents/${d.id}/preview` })));
       setDocumentTypes(typesData)
       setStats(statsData)
     } catch (error) {
@@ -369,6 +397,50 @@ export default function DocumentManagementPage() {
     return docType?.label || type
   }
 
+  const loadPreviewUrl = async (document: Document) => {
+    if (!document.mime_type?.startsWith('image/') && document.mime_type !== 'application/pdf') {
+      return; // Only handle images and PDFs
+    }
+
+    // Mark as loading
+    setLoadingPreviews(prev => new Set(prev).add(document.id));
+
+    try {
+      const token = authService.getToken() || localStorage.getItem('access_token');
+      if (!token) {
+        console.error('No authentication token available for preview');
+        return;
+      }
+
+      const response = await fetch(`/api/v1/inspector/documents/${document.id}/preview`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Preview request failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      setPreviewUrls(prev => ({
+        ...prev,
+        [document.id]: url
+      }));
+    } catch (error) {
+      console.error(`Failed to load preview for document ${document.id}:`, error);
+    } finally {
+      // Remove from loading set
+      setLoadingPreviews(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(document.id);
+        return newSet;
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout breadcrumbs={breadcrumbs}>
@@ -494,8 +566,8 @@ export default function DocumentManagementPage() {
           </Dialog>
         </div>
 
-        {/* Stats Cards */}
-        {stats && (
+        {/* Stats Cards - Only show if stats data exists and is meaningful */}
+        {stats && stats.total_documents > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -614,105 +686,176 @@ export default function DocumentManagementPage() {
             : 'space-y-4'
           }>
             {filteredDocuments.map((document) => (
-              <Card key={document.id} className={viewMode === 'list' ? 'p-4' : ''}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {getDocumentTypeIcon(document.document_type)}
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-sm font-medium truncate">
-                          {document.original_filename}
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                          {formatDate(document.upload_date)} • {formatFileSize(document.file_size)}
-                        </CardDescription>
+              <Card key={document.id} className={`${viewMode === 'list' ? 'p-4' : 'overflow-hidden'} bg-card border hover:shadow-md transition-shadow`}>
+                <div className="flex flex-col h-full">
+                  {/* Card Header with Document Info and Type Badge */}
+                  <div className="p-4 pb-3 border-b">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {getDocumentTypeIcon(document.document_type)}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-medium truncate">
+                            {document.original_filename}
+                          </h3>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                            <span>{formatDate(document.upload_date)}</span>
+                            <span>•</span>
+                            <span>{formatFileSize(document.file_size)}</span>
+                          </div>
+                        </div>
                       </div>
+                      <Badge variant="secondary" className="ml-2 text-xs px-2 py-1">
+                        {getDocumentTypeLabel(document.document_type)}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="ml-2 text-xs">
-                      {getDocumentTypeLabel(document.document_type)}
-                    </Badge>
+                    
+                    {document.description && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                        {document.description}
+                      </p>
+                    )}
                   </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0 space-y-4">
-                  {/* Preview Section */}
-                  {(() => {
-                    const isImage = document.mime_type?.startsWith('image/');
-                    const isPdf = document.mime_type === 'application/pdf';
-                    const previewUrl = `/api/v1/inspector/documents/${document.id}/preview`;  // Fixed: Hardcoded to bypass API class issue
-
-                    if (isImage) {
-                      return (
-                        <div className="flex justify-center p-4 bg-muted rounded-md">
-                          <img
-                            src={previewUrl}
-                            alt={`Preview of ${document.original_filename}`}
-                            loading="lazy"
-                            className="max-h-48 max-w-full object-contain rounded"
-                            onError={(e) => {
-                              console.error('Image Preview Failed:', { documentId: document.id, url: previewUrl, error: e });
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                          <div className="hidden text-muted-foreground text-sm mt-2">
-                            <FileText className="h-8 w-8 inline mr-2" />
-                            Image preview unavailable
-                          </div>
-                        </div>
-                      );
-                    } else if (isPdf) {
-                      return (
-                        <div className="flex justify-center p-4 bg-muted rounded-md max-h-48 overflow-hidden">
-                          <iframe
-                            src={previewUrl}
-                            title={`Preview of ${document.original_filename}`}
-                            loading="lazy"
-                            className="w-full h-48 border-0 rounded"
-                            onError={(e) => {
-                              console.error('PDF Preview Failed:', { documentId: document.id, url: previewUrl, error: e });
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                          <div className="hidden flex flex-col items-center justify-center p-8 bg-muted rounded-md text-muted-foreground">
-                            <FileText className="h-12 w-12 mb-2" />
-                            <p className="text-sm text-center">PDF preview unavailable - download to view</p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownload(document)}
-                              className="mt-2"
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download PDF
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md text-muted-foreground">
-                          <FileText className="h-12 w-12 mb-2" />
-                          <p className="text-sm text-center">Download to view {document.original_filename}</p>
-                        </div>
-                      );
-                    }
-                  })()}
-                  {document.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {document.description}
-                    </p>
-                  )}
                   
-                  <div className="flex gap-2">
+                  {/* Preview Section */}
+                  <div className="flex-1 p-4">
+                    {(() => {
+                      const isImage = document.mime_type?.startsWith('image/');
+                      const isPdf = document.mime_type === 'application/pdf';
+                      const isPreviewLoading = loadingPreviews.has(document.id);
+                      const previewUrl = previewUrls[document.id];
+                      
+                      if (isImage) {
+                        if (isPreviewLoading && !previewUrl) {
+                          // Show loading state while preview is being loaded
+                          return (
+                            <div className="flex justify-center items-center p-8 bg-muted rounded-md min-h-[200px]">
+                              <div className="text-center">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                                <p className="mt-2 text-sm text-muted-foreground">Loading preview...</p>
+                              </div>
+                            </div>
+                          );
+                        } else if (previewUrl) {
+                          // Show the loaded preview
+                          return (
+                            <div className="flex justify-center items-center p-4 bg-muted rounded-md min-h-[200px]">
+                              <img
+                                src={previewUrl}
+                                alt={`Preview of ${document.original_filename}`}
+                                className="max-h-40 max-w-full object-contain rounded"
+                                onError={(e) => {
+                                  console.error('Image Preview Failed:', { documentId: document.id, previewUrl, error: e });
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="hidden text-muted-foreground text-sm mt-2">
+                                <FileText className="h-8 w-8 inline mr-2" />
+                                Image preview unavailable
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // Show a placeholder when preview is not yet loaded but loading has finished
+                          return (
+                            <div className="flex justify-center items-center p-8 bg-muted rounded-md min-h-[200px]">
+                              <div className="text-center">
+                                <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+                                <p className="text-sm mt-2 text-muted-foreground">Preview loading...</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => loadPreviewUrl(document)} // Allow manual trigger
+                                  className="mt-2"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Load Preview
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      } else if (isPdf) {
+                        if (isPreviewLoading && !previewUrl) {
+                          // Show loading state while preview is being loaded
+                          return (
+                            <div className="flex justify-center items-center p-8 bg-muted rounded-md min-h-[200px]">
+                              <div className="text-center w-full">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                                <p className="mt-2 text-sm text-muted-foreground">Loading preview...</p>
+                              </div>
+                            </div>
+                          );
+                        } else if (previewUrl) {
+                          // Show the loaded preview
+                          return (
+                            <div className="flex justify-center items-center p-4 bg-muted rounded-md min-h-[200px]">
+                              <iframe
+                                src={previewUrl}
+                                title={`Preview of ${document.original_filename}`}
+                                className="w-full h-40 border-0 rounded"
+                                onError={(e) => {
+                                  console.error('PDF Preview Failed:', { documentId: document.id, previewUrl, error: e });
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="hidden flex flex-col items-center justify-center p-8 bg-muted rounded-md text-muted-foreground">
+                                <FileText className="h-12 w-12 mb-2" />
+                                <p className="text-sm text-center">PDF preview unavailable - download to view</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDownload(document)}
+                                  className="mt-2"
+                                >
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Download PDF
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // Show a placeholder when preview is not yet loaded but loading has finished
+                          return (
+                            <div className="flex justify-center items-center p-8 bg-muted rounded-md h-[200px]">
+                              <div className="text-center w-full">
+                                <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+                                <p className="text-sm mt-2 text-muted-foreground">PDF preview loading...</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => loadPreviewUrl(document)} // Allow manual trigger
+                                  className="mt-2"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Load Preview
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      } else {
+                        return (
+                          <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md h-[200px]">
+                            <FileText className="h-12 w-12 mb-2 text-muted-foreground" />
+                            <p className="text-sm text-center text-muted-foreground">Download to view {document.original_filename}</p>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="p-3 pt-2 border-t flex justify-between items-center">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownload(document)}
+                      className="flex items-center gap-1"
                     >
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
+                      <Download className="h-4 w-4" />
+                      <span>Download</span>
                     </Button>
                     
                     <EnhancedDocumentDeleteDialog
@@ -732,12 +875,13 @@ export default function DocumentManagementPage() {
                         setSelectedDocument(document)
                         setDeleteDialogOpen(true)
                       }}
+                      className="flex items-center gap-1 text-destructive hover:text-destructive border-destructive"
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
                     </Button>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             ))}
           </div>

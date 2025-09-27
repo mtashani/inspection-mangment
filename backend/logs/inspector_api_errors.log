@@ -193,3 +193,544 @@
   },
   "stack_trace": "Traceback (most recent call last):\n  File \"C:\\Users\\tashan\\Documents\\code\\inspection mangment\\backend\\app\\domains\\inspector\\api\\inspector.py\", line 229, in create_inspector\n    raise HTTPException(\nfastapi.exceptions.HTTPException\n"
 }
+2025-09-27 04:44:12,854 - domain.inspector - ERROR - [_create_domain_logger:90] - Domain logger 'inspector' initialized at 2025-09-27 04:44:12.854390
+2025-09-27 04:44:12,857 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:44:12.854390",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:44:12,859 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:44:12.859396",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:48:14,408 - domain.inspector - ERROR - [_create_domain_logger:90] - Domain logger 'inspector' initialized at 2025-09-27 04:48:14.408100
+2025-09-27 04:48:14,408 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:48:14.408100",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:48:14,409 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:48:14.408100",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:49:37,218 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:49:37.218164",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:49:37,328 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:49:37.328516",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:04,910 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:04.909936",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:05,080 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:05.080590",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:10,941 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:10.941826",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:10,942 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:10.942586",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:15,395 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:15.395925",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:15,400 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:15.399943",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:30,681 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:30.681000",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:30,682 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:30.682372",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:37,132 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:37.132268",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:37,173 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:37.173409",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:40,762 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:40.762631",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:40,768 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:40.768619",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:56,287 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:56.287561",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:56,321 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:56.321444",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:57,297 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:57.297670",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:50:57,455 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:50:57.455102",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:07,821 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:07.821449",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:07,831 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:07.831448",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:18,575 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:18.575499",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:18,603 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:18.603503",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:22,399 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:22.399204",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:22,502 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:22.502016",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:40,223 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:40.223340",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:40,226 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:40.226338",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:57,100 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:57.100893",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:51:57,112 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:51:57.111981",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:13,506 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:13.505935",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:13,506 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:13.506940",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:24,093 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:24.092567",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:32,050 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:32.050642",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:32,058 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:32.058685",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:42,425 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:42.424153",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:42,433 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:42.433264",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:48,478 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:48.478937",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:52:48,480 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:52:48.480582",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:53:39,354 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:53:39.354117",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:53:39,358 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:53:39.358466",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:55:41,345 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:55:41.345507",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:55:41,346 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:55:41.345507",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:55:52,641 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:55:52.641308",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:55:53,424 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:55:53.424908",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:57:04,917 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:57:04.917898",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/2/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}
+2025-09-27 04:57:05,065 - domain.inspector - ERROR - [log_api_error:140] - {
+  "timestamp": "2025-09-27T04:57:05.058287",
+  "domain": "inspector",
+  "endpoint": "/api/v1/inspector/documents/3/preview",
+  "method": "GET",
+  "error_type": "Exception",
+  "error_message": "Could not validate credentials - authentication failed",
+  "status_code": 401,
+  "user_id": null,
+  "stack_trace": "NoneType: None\n"
+}

@@ -361,6 +361,13 @@ export class FileUploadAPI {
   }
 
   /**
+   * Get document statistics for an inspector
+   */
+  async getDocumentStats(inspectorId: number): Promise<any> {
+    return adminApiGet<any>(`${this.documentBaseUrl}/documents/stats/${inspectorId}`)
+  }
+
+  /**
    * Get thumbnail URL for documents
    */
   getThumbnailUrl(documentId: number): string {

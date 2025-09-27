@@ -38,3 +38,5 @@ pre-commit>=3.4.0,<3.5.0
 python-dateutil>=2.8.2
 typing-extensions>=4.8.0
 jdatetime>=3.10.0
+
+Pillow
