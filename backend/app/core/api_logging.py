@@ -280,3 +280,70 @@ def log_domain_validation_error(
         request_data=request_data,
         user_id=user_id
     )
+
+
+# Global exception handler for 415 errors
+def add_global_exception_handlers(app):
+    """
+    Add global exception handlers for the FastAPI app to catch 415 errors
+    that occur at the ASGI level before reaching the application logic
+    """
+    from fastapi import Request
+    from fastapi.responses import JSONResponse
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    import logging
+
+    @app.exception_handler(415)
+    async def media_type_exception_handler(request: Request, exc: StarletteHTTPException):
+        """Handle 415 Unsupported Media Type errors globally"""
+        # Extract domain from the URL path to determine which logger to use
+        path = request.url.path
+        domain = "general"  # Default domain
+        
+        # Determine the appropriate domain based on the path
+        if "/inspector" in path or "/inspectors" in path:
+            domain = "inspector"
+        elif "/maintenance" in path:
+            domain = "maintenance"
+        elif "/equipment" in path:
+            domain = "equipment"
+        elif "/psv" in path:
+            domain = "psv"
+        elif "/cranes" in path:
+            domain = "crane"
+        elif "/corrosion" in path:
+            domain = "corrosion"
+        elif "/daily-reports" in path:
+            domain = "daily_report"
+        elif "/inspections" in path:
+            domain = "inspection"
+        elif "/auth" in path:
+            domain = "auth"
+        elif "/admin" in path:
+            domain = "admin"
+        elif "/notifications" in path:
+            domain = "notifications"
+        elif "/rbi" in path:
+            domain = "rbi"
+        elif "/report" in path:
+            domain = "report"
+        
+        # Log the error with DomainLogger
+        DomainLogger.log_api_error(
+            domain_name=domain,
+            endpoint=path,
+            method=request.method,
+            error=exc,
+            request_data=None,  # Can't extract request data for 415 errors
+            user_id=None,  # Can't extract user ID for 415 errors
+            status_code=415
+        )
+        
+        return JSONResponse(
+            status_code=415,
+            content={
+                "message": "Unsupported Media Type",
+                "type": "media_type_error",
+                "url": str(request.url.path)
+            }
+        )

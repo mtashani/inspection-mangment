@@ -5,9 +5,11 @@ from datetime import datetime
 from app.database import get_session
 from app.domains.equipment.models.equipment import Equipment
 from app.domains.equipment.models.enums import EquipmentCategory, EquipmentStatus, EquipmentCondition
+from app.core.api_logging import log_api_errors
 
 router = APIRouter()
 
+@log_api_errors("equipment")
 @router.get("/", response_model=List[Equipment])
 def get_equipment(
     skip: int = 0,
@@ -32,6 +34,7 @@ def get_equipment(
         
     return db.exec(query.offset(skip).limit(limit)).all()
 
+@log_api_errors("equipment")
 @router.post("/", response_model=Equipment)
 def create_equipment(
     equipment: Equipment,
@@ -47,6 +50,7 @@ def create_equipment(
         raise HTTPException(status_code=400, detail=str(e))
     return equipment
 
+@log_api_errors("equipment")
 @router.get("/{equipment_id}", response_model=Equipment)
 def get_equipment_by_id(
     equipment_id: int,
@@ -61,6 +65,7 @@ def get_equipment_by_id(
         )
     return equipment
 
+@log_api_errors("equipment")
 @router.put("/{equipment_id}", response_model=Equipment)
 def update_equipment(
     equipment_id: int,
@@ -85,6 +90,7 @@ def update_equipment(
         raise HTTPException(status_code=400, detail=str(e))
     return db_equipment
 
+@log_api_errors("equipment")
 @router.delete("/{equipment_id}")
 def delete_equipment(
     equipment_id: int,
@@ -103,6 +109,7 @@ def delete_equipment(
         raise HTTPException(status_code=400, detail=str(e))
     return {"message": "Equipment deleted successfully"}
 
+@log_api_errors("equipment")
 @router.get("/{equipment_id}/inspections")
 def get_equipment_inspections(
     equipment_id: int,

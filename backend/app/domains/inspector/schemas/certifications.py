@@ -14,8 +14,8 @@ class CertificationCreateRequest(BaseModel):
     certification_type: InspectorCertification = Field(..., description="Type of certification")
     certification_number: str = Field(..., description="Certification number")
     level: CertificationLevel = Field(..., description="Certification level")
-    issue_date: date = Field(..., description="Date the certification was issued")
-    expiry_date: date = Field(..., description="Date the certification expires")
+    issue_date: Optional[date] = Field(None, description="Date the certification was issued")
+    expiry_date: Optional[date] = Field(None, description="Date the certification expires")
     issuing_authority: str = Field(..., description="Organization that issued the certification")
     document_path: Optional[str] = Field(None, description="Path to the certificate document file")
 
@@ -38,8 +38,8 @@ class CertificationResponse(BaseModel):
     certification_type: str
     certification_number: str
     level: str
-    issue_date: date
-    expiry_date: date
+    issue_date: Optional[date]
+    expiry_date: Optional[date]
     issuing_authority: str
     document_path: Optional[str]
     created_at: datetime

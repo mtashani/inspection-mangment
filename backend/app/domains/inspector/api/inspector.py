@@ -15,7 +15,7 @@ from app.domains.auth.dependencies import (
     require_standardized_permission
 )
 from app.core.api_logging import log_api_errors, log_domain_error, log_domain_validation_error
-from app.domains.inspector.services.file_upload_service import FileUploadService
+from app.domains.inspector.services.document_service import FileUploadService
 
 router = APIRouter()
 

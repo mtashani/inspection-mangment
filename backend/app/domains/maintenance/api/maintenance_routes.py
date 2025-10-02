@@ -14,6 +14,7 @@ from app.domains.maintenance.models.enums import (
     MaintenanceEventCategory
 )
 from app.domains.notifications.services.notification_service import NotificationService
+from app.core.api_logging import log_api_errors
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ class MaintenanceSubEventResponse(BaseModel):
 
 # Maintenance Events Endpoints
 
+@log_api_errors("maintenance")
 @router.get("/events", response_model=List[Dict[str, Any]])
 def get_maintenance_events(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -196,6 +198,7 @@ def get_maintenance_events(
         logger.error(f"Failed to get maintenance events: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get maintenance events: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.get("/events/{event_id}/inspections")
 def get_event_inspections(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -281,6 +284,7 @@ def get_event_inspections(
         logger.error(f"Failed to get inspections for event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get event inspections: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.get("/statistics/summary")
 def get_maintenance_statistics_summary(
     session: Session = Depends(get_session)
@@ -337,6 +341,7 @@ def get_maintenance_statistics_summary(
         logger.error(f"Failed to get maintenance statistics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get maintenance statistics: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events", response_model=MaintenanceEventResponse)
 async def create_maintenance_event(
     event_data: MaintenanceEventCreateRequest,
@@ -417,6 +422,7 @@ async def create_maintenance_event(
         logger.error(f"Failed to create maintenance event: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.get("/events/{event_id}", response_model=Dict[str, Any])
 def get_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -479,6 +485,7 @@ def get_maintenance_event(
         logger.error(f"Failed to get maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.put("/events/{event_id}", response_model=MaintenanceEventResponse)
 async def update_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -583,6 +590,7 @@ async def update_maintenance_event(
         logger.error(f"Failed to update maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.delete("/events/{event_id}")
 def delete_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -629,6 +637,7 @@ def delete_maintenance_event(
 
 # Sub-Events Endpoints
 
+@log_api_errors("maintenance")
 @router.get("/sub-events", response_model=List[MaintenanceSubEventResponse])
 def get_maintenance_sub_events(
     parent_event_id: Optional[int] = Query(None, description="Filter by parent event ID"),
@@ -671,6 +680,7 @@ def get_maintenance_sub_events(
         logger.error(f"Failed to get maintenance sub-events: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get maintenance sub-events: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/sub-events", response_model=MaintenanceSubEventResponse)
 async def create_maintenance_sub_event(
     sub_event_data: MaintenanceSubEventCreateRequest,
@@ -762,6 +772,7 @@ async def create_maintenance_sub_event(
         logger.error(f"Failed to create maintenance sub-event: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance sub-event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.put("/sub-events/{sub_event_id}", response_model=MaintenanceSubEventResponse)
 def update_maintenance_sub_event(
     sub_event_id: int = Path(..., description="Maintenance sub-event ID"),
@@ -815,6 +826,7 @@ def update_maintenance_sub_event(
         logger.error(f"Failed to update maintenance sub-event {sub_event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update maintenance sub-event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.delete("/sub-events/{sub_event_id}")
 def delete_maintenance_sub_event(
     sub_event_id: int = Path(..., description="Maintenance sub-event ID"),
@@ -846,6 +858,7 @@ def delete_maintenance_sub_event(
 
 # Statistics and Reports
 
+@log_api_errors("maintenance")
 @router.get("/statistics/summary")
 def get_maintenance_statistics(
     from_date: Optional[date] = Query(None, description="Statistics from date"),
@@ -946,6 +959,7 @@ def get_maintenance_statistics(
         logger.error(f"Failed to get maintenance statistics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get statistics: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/start")
 async def start_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1004,6 +1018,7 @@ async def start_maintenance_event(
         logger.error(f"Failed to start maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to start maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/complete")
 async def complete_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1067,6 +1082,7 @@ async def complete_maintenance_event(
         logger.error(f"Failed to complete maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to complete maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/reopen")
 def reopen_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1110,6 +1126,7 @@ def reopen_maintenance_event(
         logger.error(f"Failed to reopen maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to reopen maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/approve")
 async def approve_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1170,6 +1187,7 @@ async def approve_maintenance_event(
         logger.error(f"Failed to approve maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to approve maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/revert-approval")
 async def revert_event_approval(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1227,6 +1245,7 @@ async def revert_event_approval(
         logger.error(f"Failed to revert approval for maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to revert approval: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/revert")
 def revert_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),
@@ -1271,6 +1290,7 @@ def revert_maintenance_event(
         logger.error(f"Failed to revert maintenance event {event_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to revert maintenance event: {str(e)}")
 
+@log_api_errors("maintenance")
 @router.post("/events/{event_id}/reactivate")
 def reactivate_maintenance_event(
     event_id: int = Path(..., description="Maintenance event ID"),

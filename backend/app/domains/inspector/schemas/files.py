@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from app.domains.inspector.models.documents import DocumentType
+from app.domains.inspector.models.enums import InspectorCertification, CertificationLevel
 
 
 class DocumentInfoResponse(BaseModel):
@@ -21,7 +22,15 @@ class DocumentInfoResponse(BaseModel):
     upload_date: datetime
     description: Optional[str]
     download_url: str
+    preview_url: str
     exists: bool
+    # Additional fields for certificate-specific information
+    certification_type: Optional[str]
+    certification_number: Optional[str]
+    level: Optional[str]
+    issue_date: Optional[date]
+    expiry_date: Optional[date]
+    issuing_authority: Optional[str]
 
     class Config:
         from_attributes = True
@@ -32,16 +41,6 @@ class UploadResponse(BaseModel):
     success: bool
     message: str
     document: DocumentInfoResponse
-
-
-class MultipleUploadResponse(BaseModel):
-    """Response model for multiple file upload"""
-    success: bool
-    message: str
-    uploaded_documents: List[DocumentInfoResponse]
-    failed_uploads: List[dict]
-    total_uploaded: int
-    total_failed: int
 
 
 class UploadConfigResponse(BaseModel):

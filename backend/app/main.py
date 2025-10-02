@@ -7,6 +7,7 @@ import logging
 
 from app.core.config import settings
 from app.database import create_db_and_tables
+from app.core.api_logging import add_global_exception_handlers
 
 # Import all models to ensure they are registered with SQLAlchemy
 # Import models in the correct order to avoid circular dependencies
@@ -23,6 +24,9 @@ app = FastAPI(
     description="API for inspection management system",
     version="1.0.0",
 )
+
+# Add global exception handlers for 415 errors and other edge cases
+add_global_exception_handlers(app)
 
 # Configure CORS
 app.add_middleware(

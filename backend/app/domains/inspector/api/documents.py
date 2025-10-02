@@ -14,7 +14,7 @@ from app.database import get_session
 from app.domains.auth.dependencies import get_current_active_inspector, require_standardized_permission
 from app.domains.inspector.models.inspector import Inspector
 from app.domains.inspector.models.documents import InspectorDocument, DocumentType
-from app.domains.inspector.services.file_upload_service import FileUploadService
+from app.domains.inspector.services.document_service import FileUploadService
 from app.domains.inspector.schemas.files import UploadResponse, DocumentInfoResponse, DeleteResponse
 from app.core.api_logging import log_api_errors
 

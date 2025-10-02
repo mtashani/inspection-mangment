@@ -109,22 +109,20 @@ const api = {
   },
 
   getCertificateStats: async (inspectorId: number) => {
-    // Placeholder for certificate stats
-    return {
-      inspector_id: inspectorId,
-      total_certificates: 0,
-      total_size_bytes: 0,
-      total_size_mb: 0,
-      file_types: {},
-      average_file_size_mb: 0
-    }
+    return fileUploadAPI.getCertificateStats(inspectorId)
   },
 
   downloadCertificate: async (certificateId: number) => {
     // Open download URL in new tab
-    const url = fileUploadAPI.getDownloadUrl(certificateId)
+    const url = fileUploadAPI.getDownloadUrl(certificateId, 'certificate')
     window.open(url, '_blank')
     return new Blob()
+  },
+
+  previewCertificate: async (certificateId: number) => {
+    // Open preview URL in new tab
+    const url = fileUploadAPI.getPreviewUrl(certificateId, 'certificate')
+    window.open(url, '_blank')
   }
 }
 
@@ -148,6 +146,7 @@ interface CertificateStats {
   total_certificates: number
   total_size_bytes: number
   total_size_mb: number
+  document_types: { [key: string]: number }
   file_types: { [key: string]: number }
   average_file_size_mb: number
 }
@@ -648,6 +647,14 @@ export default function CertificateManagementPage() {
                 )}
                 
                 <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => api.previewCertificate(certificate.id)}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    Preview
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"

@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import Optional, List
 from datetime import datetime, date
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, JSON, String
+from sqlalchemy import Column, JSON, String, UniqueConstraint
 from app.domains.inspector.models.enums import InspectorCertification, CertificationLevel
 
 # Use TYPE_CHECKING to avoid circular imports
@@ -84,6 +84,7 @@ class Inspector(SQLModel, table=True):
 class InspectorCertificationRecord(SQLModel, table=True):
     """Model for inspector certification records"""
     __tablename__ = "inspector_certifications"  # type: ignore
+    __table_args__ = (UniqueConstraint("inspector_id", "certification_number", name="unique_inspector_cert_number"),)
     
     id: Optional[int] = Field(default=None, primary_key=True)
     inspector_id: int = Field(foreign_key="inspectors.id")
@@ -91,8 +92,8 @@ class InspectorCertificationRecord(SQLModel, table=True):
     certification_type: InspectorCertification
     certification_number: str
     level: CertificationLevel
-    issue_date: date
-    expiry_date: date
+    issue_date: Optional[date] = None  # Made nullable
+    expiry_date: Optional[date] = None  # Made nullable
     issuing_authority: str
     
     # Certificate details

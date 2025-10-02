@@ -231,9 +231,16 @@ export class FileUploadAPI {
     }
 
     const queryString = buildQueryParams(params)
-    return adminApiGet<DocumentInfo[]>(
-      `${this.documentBaseUrl}/documents/${inspectorId}${queryString}`
-    )
+    // Use certificates endpoint for certificate document type
+    if (documentType === 'certificate') {
+      return adminApiGet<DocumentInfo[]>(
+        `${this.documentBaseUrl}/certificates/${inspectorId}${queryString}`
+      )
+    } else {
+      return adminApiGet<DocumentInfo[]>(
+        `${this.documentBaseUrl}/documents/${inspectorId}${queryString}`
+      )
+    }
   }
 
   /**
@@ -272,19 +279,28 @@ export class FileUploadAPI {
   /**
    * Get download URL for a document
    */
-  getDownloadUrl(documentId: number): string {
-    return `${this.documentBaseUrl}/documents/${documentId}/download`
-  }
+  getDownloadUrl(documentId: number, documentType: string = 'document'): string {
+    if (documentType === 'certificate') {
+      return `${this.documentBaseUrl}/certificates/${documentId}/download`
+    } else {
+      return `${this.documentBaseUrl}/documents/${documentId}/download`
+    }
+ }
 
-  getPreviewUrl(documentId: number): string {
-    return `${this.documentBaseUrl}/documents/${documentId}/preview`
+  getPreviewUrl(documentId: number, documentType: string = 'document'): string {
+    // Use different endpoints based on document type
+    if (documentType === 'certificate') {
+      return `${this.documentBaseUrl}/certificates/${documentId}/preview`
+    } else {
+      return `${this.documentBaseUrl}/documents/${documentId}/preview`
+    }
   }
 
   /**
    * Download a file (opens in new tab or triggers download)
    */
-  downloadFile(documentId: number): void {
-    const url = this.getDownloadUrl(documentId)
+ downloadFile(documentId: number, documentType: string = 'document'): void {
+    const url = this.getDownloadUrl(documentId, documentType)
     window.open(url, '_blank')
   }
 
@@ -350,29 +366,45 @@ export class FileUploadAPI {
   isImage(mimeType: string | null): boolean {
     if (!mimeType) return false
     return mimeType.startsWith('image/')
-  }
+ }
 
   /**
-   * Get preview URL for images
+   * Get preview URL for images based on document type
    */
-  getPreviewUrl(documentId: number, mimeType: string | null): string | null {
+  getPreviewUrlForImage(documentId: number, mimeType: string | null, documentType: string = 'document'): string | null {
     if (!this.isImage(mimeType)) return null
-    return `${this.documentBaseUrl}/documents/${documentId}/download`
+    // For certificates, use the certificate preview endpoint
+    if (documentType === 'certificate') {
+      return `${this.documentBaseUrl}/certificates/${documentId}/preview`
+    } else {
+      return `${this.documentBaseUrl}/documents/${documentId}/download`
+    }
   }
 
   /**
    * Get document statistics for an inspector
    */
-  async getDocumentStats(inspectorId: number): Promise<any> {
-    return adminApiGet<any>(`${this.documentBaseUrl}/documents/stats/${inspectorId}`)
+  async getDocumentStats(inspectorId: number): Promise<DocumentInfo[]> {
+    return adminApiGet<DocumentInfo[]>(`${this.documentBaseUrl}/documents/stats/${inspectorId}`)
   }
 
   /**
-   * Get thumbnail URL for documents
+   * Get certificate statistics for an inspector
    */
-  getThumbnailUrl(documentId: number): string {
-    return `${this.documentBaseUrl}/documents/${documentId}/download`
-  }
+ async getCertificateStats(inspectorId: number): Promise<DocumentInfo[]> {
+    return adminApiGet<DocumentInfo[]>(`${this.documentBaseUrl}/certificates/stats/${inspectorId}`)
+ }
+
+  /**
+   * Get thumbnail URL for documents or certificates
+   */
+  getThumbnailUrl(documentId: number, documentType: string = 'document'): string {
+    if (documentType === 'certificate') {
+      return `${this.documentBaseUrl}/certificates/${documentId}/download`
+    } else {
+      return `${this.documentBaseUrl}/documents/${documentId}/download`
+    }
+ }
 
   /**
    * Check if file has preview capability

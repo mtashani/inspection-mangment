@@ -301,7 +301,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                       {fileUploadAPI.isImage(document.mime_type) && (
                         <div className="mb-3">
                           <img
-                            src={fileUploadAPI.getPreviewUrl(document.id, document.mime_type)!}
+                            src={fileUploadAPI.getPreviewUrlForImage(document.id, document.mime_type, document.document_type)!}
                             alt={document.filename}
                             className="w-full h-32 object-cover rounded border"
                           />
@@ -309,7 +309,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                       )}
 
                       {/* Document Info */}
-                      <div className="space-y-2 text-xs text-gray-500">
+                      <div className="space-y-2 text-xs text-gray-50">
                         <div className="flex items-center space-x-1">
                           <Calendar className="w-3 h-3" />
                           <span>{formatDate(document.upload_date)}</span>
